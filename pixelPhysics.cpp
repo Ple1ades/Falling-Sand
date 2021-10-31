@@ -66,8 +66,10 @@ void addParticle(PARTICLETYPES * particleTypes, int x, int y, int _width, uint32
             particleTypes[x + y * _width] = particleType;
             switch (particleType){
                 case SAND:
-                    pixels[x + y * _width] = colors[2+FastRand()%3];
+                    pixels[x + y * _width] = allProperties[SAND].pixelColors[FastRand()%3];
                     break;
+                case WATER:
+                    pixels[x + y * _width] = allProperties[WATER].pixelColors[FastRand()%3];
             }
             break;
                 

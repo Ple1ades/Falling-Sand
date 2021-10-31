@@ -286,7 +286,7 @@ int main()
                 addParticle(particles, mouseX, mouseY, g_kRenderWidth, pixels, colors, SAND);
             }
             if (rightMouseDown){
-                removeParticle(particles, mouseX, mouseY, g_kRenderWidth, pixels, colors);
+                addParticle(particles, mouseX, mouseY, g_kRenderWidth, pixels, colors, WATER);
             }
 
             uint64_t currentTick = SDL_GetPerformanceCounter();
