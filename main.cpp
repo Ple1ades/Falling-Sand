@@ -135,14 +135,14 @@ int32_t Render(SDL_Window* pWindow, SDL_Renderer* pRenderer, SDL_Texture* pTextu
 
     // This will hold a pointer to the memory position in VRAM where our Back Buffer texture lies
     uint32_t* pPixelBuffer = nullptr;
-
+    SDL_RenderClear(pRenderer);
     // Lock the memory in order to write our Back Buffer image to it
     if (!SDL_LockTexture(pTexture, NULL, (void**)&pPixelBuffer, &pitch))
     {
         // The pitch of the Back Buffer texture in VRAM must be divided by four bytes
         // as it will always be a multiple of four
         pitch /= sizeof(uint32_t);
-
+        //memcpy(pPixelBuffer, pixels, sizeof(uint32_t) * g_kRenderHeight * g_kRenderHeight);
         // Fill texture with randomly colored pixels
         for (uint32_t i = 0; i < g_kRenderWidth * g_kRenderHeight; ++i)
             pPixelBuffer[i] = pixels[i];
