@@ -80,15 +80,61 @@ void removeParticle(PARTICLETYPES * particleTypes, int x, int y, int _width, uin
 void particleUpdate(PARTICLETYPES * particleTypes, int _width, int _height, uint32_t * pixels, uint32_t * colors){
     
     int left, right, below;
+    
     for (int x = _width - 1; x >= 0; --x){
         for (int y = _height - 1; y >= 0; --y){
             switch ((PARTICLETYPES)particleTypes[x + y * _width]){
                 default:
                     break;
                 case WATER:
-                    left = (x - 1) + (y + 1) * _width;
                     below = x + (y + 1) * _width;
-                    right = (x + 1) + (y + 1) * _width;
+                    left = (x - 1) + (y) * _width;
+                    right = (x + 1) + (y) * _width;
+                    if (y < _height - 1){
+                        if (allProperties[particleTypes[below]].shiftable && particleTypes[below] != WATER){
+                            std::swap(particleTypes[x + y * _width],particleTypes[below]);
+                            std::swap(pixels[x + y * _width], pixels[below]);
+                        }
+                        else if (x == 0){
+                            if (allProperties[particleTypes[right]].shiftable){
+                                std::swap(particleTypes[x + y * _width],particleTypes[right]);
+                                std::swap(pixels[x + y * _width], pixels[right]);
+                            }
+                        }
+                        else if (x == _width - 1){
+                            if (allProperties[particleTypes[left]].shiftable){
+                                std::swap(particleTypes[x + y * _width],particleTypes[left]);
+                                std::swap(pixels[x + y * _width], pixels[left]);
+                                
+                            }
+                        }
+                        else{
+                            if ((int)FastRand()%2 == 0){
+                                if (allProperties[particleTypes[left]].shiftable){
+                                    std::swap(particleTypes[x + y * _width],particleTypes[left]);
+                                    std::swap(pixels[x + y * _width], pixels[left]);
+                                    
+                                }
+                                else if (allProperties[particleTypes[right]].shiftable){
+                                    std::swap(particleTypes[x + y * _width],particleTypes[right]);
+                                    std::swap(pixels[x + y * _width], pixels[right]);
+                                }
+                            }
+                            else{
+                                if ((int)FastRand()%2 == 0){
+                                    if (allProperties[particleTypes[right]].shiftable){
+                                        std::swap(particleTypes[x + y * _width],particleTypes[right]);
+                                        std::swap(pixels[x + y * _width], pixels[right]);
+                                        
+                                    }
+                                    else if (allProperties[particleTypes[left]].shiftable){
+                                        std::swap(particleTypes[x + y * _width],particleTypes[left]);
+                                        std::swap(pixels[x + y * _width], pixels[left]);
+                                    }
+                                }
+                            }
+                        }
+                    }
                     break;
                 case SAND:
                     left = (x - 1) + (y + 1) * _width;
