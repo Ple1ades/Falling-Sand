@@ -161,6 +161,88 @@ int32_t Render(SDL_Window* pWindow, SDL_Renderer* pRenderer, SDL_Texture* pTextu
     else
         return g_kErrorOccurred;
 }
+
+
+
+class CaveGenerator{
+public:
+    PARTICLETYPES * map;
+    CaveGenerator(int _width, int _height, int fillPercent){
+        width = _width;
+        height = _height;
+        map = (PARTICLETYPES *)malloc(width * height * sizeof(PARTICLETYPES));
+        for (int i = 0; i < _width * _height; ++i){
+            if (FastRand() % 100 <= fillPercent){
+                map[i] = WALL;
+            }
+            else{
+                map[i] = NOTHING;
+            }
+        }
+    }
+    PARTICLETYPES * getMap(){
+        return map;
+    }
+    void step(){
+        int sum;
+        PARTICLETYPES * newMap = (PARTICLETYPES *)malloc(width * height * sizeof(PARTICLETYPES));
+        
+        for (int x = width - 1; x >= 0; --x){
+            for (int y = height - 1; y >= 0; --y){
+                sum = getNeighbors(x , y);
+                if (map[x + y * width] == NOTHING && sum > 5){
+                    newMap[x + y * width] = WALL;
+                }
+                else if (map[x + y * width] == WALL && sum < 4){
+                    newMap[x + y * width] = NOTHING;
+                }
+                else{
+                    newMap[x + y * width] = map[x + y * width];
+                }
+                //map[x + y * width] = newMap[x + y * width];
+            }
+        }
+        for (int i = 0; i < width * height; i ++){
+            map[i] = newMap[i];
+        }
+        delete [] newMap;
+    }
+    void deleteMap(){
+        delete [] map;
+    }
+private:
+    int width;
+    int height;
+    int getNeighbors(int x, int y){
+        int neighbors = 0;
+        if ((x - 1 >= 0 && y - 1 >= 0 && map[(x - 1) + (y - 1) * width] == WALL) || (x - 1 < 0 && y - 1 < 0)){
+            neighbors += 1;
+        }
+        if ((y - 1 >= 0 && map[x + (y - 1) * width] == WALL) || (y - 1 < 0)){
+            neighbors += 1;
+        }
+        if ((x + y < width && y - 1 >= 0 && map[(x + 1) + (y - 1) * width] == WALL) || (x + 1 >= width && y - 1 < 0)){
+            neighbors += 1;
+        }
+        if ((x - 1 >= 0 && map[(x - 1) + y * width] == WALL) || (x - 1 < 0)){
+            neighbors += 1;
+        }
+        if ((x + 1 < width && map[(x + 1) + y * width] == WALL) || (x + 1 >= width)){
+            neighbors += 1;
+        }
+        if ((x - 1 >= 0 && y + 1 < height && map[(x - 1) + (y + 1 * width)] == WALL) || (x - 1 < 0 && y + 1 >= height)){
+            neighbors += 1;
+        }
+        if ((y + 1 < height && map[(x) + (y + 1) * width] == WALL) || y + 1 >= height){
+            neighbors += 1;
+        }
+        if ((x + 1 < width && y + 1 < height && map[(x + 1) + (y + 1) * width] == WALL) || (x + 1 >= width && y + 1 >= height)){
+            neighbors += 1;
+        }
+        
+        return neighbors;
+    }
+};
 uint32_t * pixels;
 
 PARTICLETYPES * particles;
@@ -168,6 +250,7 @@ bool leftMouseDown = false;
 bool rightMouseDown = false;
 int mouseX = 0;
 int mouseY = 0;
+CaveGenerator caveGenerator(g_kRenderWidth, g_kRenderHeight, 50);
 int main()
 {
 
@@ -190,32 +273,23 @@ int main()
     uint64_t totalFramesRendered = 0;
     uint64_t lastTick = 0;
 
+    // for (int i = 0; i < g_kRenderWidth * g_kRenderHeight;i++){
+    //     if ((int)FastRand() % 3 == 1){
+    //         particles[i] = SAND;
+    //     }
+    //     else if ((int)FastRand() % 2 == 1){
+    //         particles[i] = WATER;
+    //     }
+    //     else{
+    //         particles[i] = NOTHING;
+    //     }
+    // }
+    caveGenerator.step();
+    //caveGenerator.step();
+    //caveGenerator.step();
+    particles = caveGenerator.getMap();
     for (int i = 0; i < g_kRenderWidth * g_kRenderHeight;i++){
-        if ((int)FastRand() % 3 == 1){
-            particles[i] = SAND;
-        }
-        else if ((int)FastRand() % 2 == 1){
-            particles[i] = WATER;
-        }
-        else{
-            particles[i] = NOTHING;
-        }
-    }
-    for (int i = 0; i < g_kRenderWidth * g_kRenderHeight;i++){
-        switch (particles[i]){
-            case NOTHING:
-                pixels[i] = allProperties[NOTHING].pixelColors[FastRand()%3];
-                break;
-            case SAND:
-                pixels[i] = allProperties[SAND].pixelColors[FastRand()%3];
-                break;
-            case WATER:
-                pixels[i] = allProperties[WATER].pixelColors[FastRand()%3];
-                break;
-            default:
-                pixels[i] = colors[1];
-                break;
-        }
+        pixels[i] = allProperties[particles[i]].pixelColors[FastRand()%3];
         //pixels[i] = colors[1];
     }
     SDL_GL_SetSwapInterval(1);
@@ -314,3 +388,4 @@ int main()
     
     return 0;
 }
+
