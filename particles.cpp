@@ -19,7 +19,13 @@ uint32_t colors[] = {
     //water color 2
     ARGB((uint32_t)35, (uint32_t)137, (uint32_t)218, 0),
     //water color 3
-    ARGB((uint32_t)28, (uint32_t)163, (uint32_t)236, 0)
+    ARGB((uint32_t)28, (uint32_t)163, (uint32_t)236, 0),
+    //wall color 1
+    ARGB((uint32_t)32, (uint32_t)32, (uint32_t)32, 0),
+    //wall color 2
+    ARGB((uint32_t)37, (uint32_t)37, (uint32_t)37, 0),
+    //wall color 3
+    ARGB((uint32_t)80, (uint32_t)80, (uint32_t)80, 0)
 };
 
 
@@ -28,7 +34,8 @@ namespace PARTICLES{
     enum PARTICLETYPES{
         NOTHING = 0,
         SAND = 1,
-        WATER = 2
+        WATER = 2,
+        WALL = 3
     };
 
     struct PARTICLEPROPERTIES{
@@ -59,6 +66,16 @@ namespace PARTICLES{
                 colors[6],
                 colors[7]}
             }
+        },
+        {
+            WALL, {
+                false,
+                {
+                    colors[8],
+                    colors[9],
+                    colors[10]
+                }
+            }
         }
     };
 
@@ -67,13 +84,7 @@ namespace PARTICLES{
         switch(particleTypes[x + y * _width]){
             case NOTHING:
                 particleTypes[x + y * _width] = particleType;
-                switch (particleType){
-                    case SAND:
-                        pixels[x + y * _width] = allProperties[SAND].pixelColors[FastRand()%3];
-                        break;
-                    case WATER:
-                        pixels[x + y * _width] = allProperties[WATER].pixelColors[FastRand()%3];
-                }
+                pixels[x + y * _width] = allProperties[particleType].pixelColors[FastRand()%3];
                 break;
                     
         }

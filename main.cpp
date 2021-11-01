@@ -255,7 +255,6 @@ int main()
                                 //particleUpdate(particles, g_kRenderWidth, g_kRenderHeight, pixels, colors);
                                 break;
                         }
-
                     case SDL_MOUSEBUTTONDOWN:
                         switch(event.button.button){
                             default:
@@ -283,10 +282,10 @@ int main()
                 }
             }
 
-            if (leftMouseDown){
+            if (leftMouseDown && totalFramesRendered % 2 == 0){
                 addParticle(particles, mouseX, mouseY, g_kRenderWidth, pixels, colors, SAND);
             }
-            if (rightMouseDown){
+            if (rightMouseDown && totalFramesRendered % 2 == 0){
                 addParticle(particles, mouseX, mouseY, g_kRenderWidth, pixels, colors, WATER);
             }
 
