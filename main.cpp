@@ -1,10 +1,11 @@
-#include <string>
 #include "./src/include/SDL.h"
 #include <math.h>
+#include <thread>
 #undef main
 
 #include "Utilities.h"
-#include "pixelPhysics.cpp"
+#include "particles.cpp"
+using namespace PARTICLES;
 
 
 constexpr static const int32_t g_kWindowWidth             = 1920;
@@ -223,9 +224,9 @@ int main()
         if (!firstFrame)
         {
             
-            particleUpdate(particles, g_kRenderWidth, g_kRenderHeight, pixels, colors);
-
-            if (e(Render(pWindow, pRenderer, pTexture, pixels), "Render failed\n")) break;
+            std::thread particleThread(particleUpdate, particles, g_kRenderWidth, g_kRenderHeight, pixels, colors);
+            //particleUpdate(particles, g_kRenderWidth, g_kRenderHeight, pixels, colors);
+            std::thread renderThread(e, Render(pWindow, pRenderer, pTexture, pixels), "Render failed\n");
 
             SDL_Event event;
             
@@ -293,6 +294,8 @@ int main()
             totalTicks += currentTick - lastTick;
             lastTick = currentTick;
             ++totalFramesRendered;
+            particleThread.join();
+            renderThread.join();
         }
         else
         {
