@@ -102,6 +102,10 @@ namespace PARTICLES{
                 switch ((PARTICLETYPES)particleTypes[x + y * _width]){
                     default:
                         break;
+                    case NOTHING:
+                        break;
+                    case WALL:
+                        break;
                     case WATER:
                         below = x + (y + 1) * _width;
                         left = (x - 1) + (y) * _width;
@@ -137,16 +141,14 @@ namespace PARTICLES{
                                     }
                                 }
                                 else{
-                                    if ((int)FastRand()%2 == 0){
-                                        if (allProperties[particleTypes[right]].shiftable){
-                                            std::swap(particleTypes[x + y * _width],particleTypes[right]);
-                                            std::swap(pixels[x + y * _width], pixels[right]);
-                                            
-                                        }
-                                        else if (allProperties[particleTypes[left]].shiftable){
-                                            std::swap(particleTypes[x + y * _width],particleTypes[left]);
-                                            std::swap(pixels[x + y * _width], pixels[left]);
-                                        }
+                                    if (allProperties[particleTypes[right]].shiftable){
+                                        std::swap(particleTypes[x + y * _width],particleTypes[right]);
+                                        std::swap(pixels[x + y * _width], pixels[right]);
+                                        
+                                    }
+                                    else if (allProperties[particleTypes[left]].shiftable){
+                                        std::swap(particleTypes[x + y * _width],particleTypes[left]);
+                                        std::swap(pixels[x + y * _width], pixels[left]);
                                     }
                                 }
                             }
@@ -198,21 +200,19 @@ namespace PARTICLES{
                                     }
                                 }
                                 else{
-                                    if ((int)FastRand()%2 == 0){
-                                        if (allProperties[particleTypes[right]].shiftable){
-                                            particleTypes[x + y * _width]= particleTypes[right];
-                                            particleTypes[right] = SAND;
-                                            
-                                            std::swap(pixels[x + y * _width], pixels[right]);
-                                            
-                                        }
-                                        else if (allProperties[particleTypes[left]].shiftable){
-                                            particleTypes[x + y * _width]= particleTypes[left];
-                                            particleTypes[left] = SAND;
-                                            
-                                            std::swap(pixels[x + y * _width], pixels[left]);
-                                            
-                                        }
+                                    if (allProperties[particleTypes[right]].shiftable){
+                                        particleTypes[x + y * _width]= particleTypes[right];
+                                        particleTypes[right] = SAND;
+                                        
+                                        std::swap(pixels[x + y * _width], pixels[right]);
+                                        
+                                    }
+                                    else if (allProperties[particleTypes[left]].shiftable){
+                                        particleTypes[x + y * _width]= particleTypes[left];
+                                        particleTypes[left] = SAND;
+                                        
+                                        std::swap(pixels[x + y * _width], pixels[left]);
+                                        
                                     }
                                 }
                             }
