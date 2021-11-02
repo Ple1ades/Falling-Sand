@@ -183,29 +183,40 @@ public:
     PARTICLETYPES * getMap(){
         return map;
     }
-    void step(){
-        int sum;
-        PARTICLETYPES * newMap = (PARTICLETYPES *)malloc(width * height * sizeof(PARTICLETYPES));
-        
-        for (int x = width - 1; x >= 0; --x){
-            for (int y = height - 1; y >= 0; --y){
-                sum = getNeighbors(x , y);
-                if (map[x + y * width] == NOTHING && sum > 5){
-                    newMap[x + y * width] = WALL;
+    void step(int steps){
+        for (int i = 0; i < steps; i++){
+            int sum;
+            PARTICLETYPES * newMap = (PARTICLETYPES *)malloc(width * height * sizeof(PARTICLETYPES));
+            
+            for (int x = 0; x < width ; ++x){
+                for (int y = 0; y < height; ++y){
+                    if (x <= 1) map[x + y * width] = WALL;
+                    if (y <= 1) map[x + y * width] = WALL;
+                    if (x >= width - 2) map[x + y * width] = WALL;
+                    if (y >= height - 2) map[x + y * width] = WALL;
+                    sum = getNeighbors(x , y);
+                    if (map[x + y * width] == WALL && sum < 4){
+                        newMap[x + y * width] = NOTHING;
+                    }
+                    else if (map[x + y * width] == NOTHING && sum >= 5){
+                        newMap[x + y * width] = WALL;
+                    }
+                    else{
+                        newMap[x + y * width] = map[x + y * width];
+                    }
+                    if (x <= 1) map[x + y * width] = WALL;
+                    if (y <= 1) map[x + y * width] = WALL;
+                    if (x >= width - 2) map[x + y * width] = WALL;
+                    if (y >= height - 2) map[x + y * width] = WALL;
+                    //map[x + y * width] = newMap[x + y * width];
                 }
-                else if (map[x + y * width] == WALL && sum < 4){
-                    newMap[x + y * width] = NOTHING;
-                }
-                else{
-                    newMap[x + y * width] = map[x + y * width];
-                }
-                //map[x + y * width] = newMap[x + y * width];
             }
+            for (int i2 = 0; i2< width * height; i2 ++){
+                map[i2] = newMap[i2];
+            }
+            delete [] newMap;
         }
-        for (int i = 0; i < width * height; i ++){
-            map[i] = newMap[i];
-        }
-        delete [] newMap;
+        
     }
     void deleteMap(){
         delete [] map;
@@ -213,33 +224,33 @@ public:
 private:
     int width;
     int height;
-    int getNeighbors(int x, int y){
+
+    int getNeighbors(int x, int y) {
         int neighbors = 0;
-        if ((x - 1 >= 0 && y - 1 >= 0 && map[(x - 1) + (y - 1) * width] == WALL) || (x - 1 < 0 && y - 1 < 0)){
+        if((x - 1 >= 0 && y - 1 >= 0 && map[x - 1 + (y - 1) * width] == WALL) || (x - 1 < 0 && y - 1 < 0)) {
             neighbors += 1;
         }
-        if ((y - 1 >= 0 && map[x + (y - 1) * width] == WALL) || (y - 1 < 0)){
+        if((y - 1 >= 0 && map[x + (y - 1) * width] == WALL) || (y - 1 < 0)) {
             neighbors += 1;
         }
-        if ((x + y < width && y - 1 >= 0 && map[(x + 1) + (y - 1) * width] == WALL) || (x + 1 >= width && y - 1 < 0)){
+        if((x + 1 < width && y - 1 >= 0 && map[x + 1 + (y - 1 ) * width] == WALL) || (x + 1 >= width && y - 1 < 0)) {
             neighbors += 1;
         }
-        if ((x - 1 >= 0 && map[(x - 1) + y * width] == WALL) || (x - 1 < 0)){
+        if((x - 1 >= 0 && map[x - 1 + y* width] == WALL) || (x - 1 < 0)) {
             neighbors += 1;
         }
-        if ((x + 1 < width && map[(x + 1) + y * width] == WALL) || (x + 1 >= width)){
+        if((x + 1 < width && map[x + 1 + y * width] == WALL) || (x + 1 >= width)) {
             neighbors += 1;
         }
-        if ((x - 1 >= 0 && y + 1 < height && map[(x - 1) + (y + 1 * width)] == WALL) || (x - 1 < 0 && y + 1 >= height)){
+        if((x - 1 >= 0 && y + 1 < height && map[x - 1 + ( y + 1 ) * width] == WALL) || (x - 1 < 0 && y + 1 >= height)) {
             neighbors += 1;
         }
-        if ((y + 1 < height && map[(x) + (y + 1) * width] == WALL) || y + 1 >= height){
+        if((y + 1 < height && map[x + (y + 1) * width] == WALL) || (y + 1 >= height)) {
             neighbors += 1;
         }
-        if ((x + 1 < width && y + 1 < height && map[(x + 1) + (y + 1) * width] == WALL) || (x + 1 >= width && y + 1 >= height)){
+        if((x + 1 < width && y + 1 < height && map[x + 1 + (y + 1) * width] == WALL) || (x + 1 >= width && y + 1 >= height)) {
             neighbors += 1;
         }
-        
         return neighbors;
     }
 };
@@ -284,9 +295,7 @@ int main()
     //         particles[i] = NOTHING;
     //     }
     // }
-    caveGenerator.step();
-    //caveGenerator.step();
-    //caveGenerator.step();
+    caveGenerator.step(20);
     particles = caveGenerator.getMap();
     for (int i = 0; i < g_kRenderWidth * g_kRenderHeight;i++){
         pixels[i] = allProperties[particles[i]].pixelColors[FastRand()%3];
@@ -388,4 +397,7 @@ int main()
     
     return 0;
 }
+
+
+
 
