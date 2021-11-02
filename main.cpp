@@ -218,6 +218,7 @@ public:
         }
         
     }
+    
     void deleteMap(){
         delete [] map;
     }
@@ -253,6 +254,7 @@ private:
         }
         return neighbors;
     }
+
 };
 uint32_t * pixels;
 
@@ -295,7 +297,7 @@ int main()
     //         particles[i] = NOTHING;
     //     }
     // }
-    caveGenerator.step(20);
+    caveGenerator.step(10);
     particles = caveGenerator.getMap();
     for (int i = 0; i < g_kRenderWidth * g_kRenderHeight;i++){
         pixels[i] = allProperties[particles[i]].pixelColors[FastRand()%3];
