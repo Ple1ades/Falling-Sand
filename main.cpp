@@ -1,6 +1,5 @@
 #include "./src/include/SDL.h"
-#include <math.h>
-#include <thread>
+
 #undef main
 
 #include "Utilities.h"
@@ -218,6 +217,36 @@ public:
         }
         
     }
+
+    std::vector<std::pair<int,int>> findLargestCavern(){
+        std::vector<std::vector<std::pair<int,int>>> caverns = getAllCaverns();
+        std::vector<std::pair<int,int>> largestCavern;// = (std::vector<std::pair<int,int>>)NULL;
+        for (std::vector<std::pair<int,int>> cavern : caverns){
+            if (cavern.size() > largestCavern.size()){
+                largestCavern = cavern;
+            }
+        }
+        // if (largestCavern.size() == 0){
+        //     largestCavern = (std::vector<std::pair<int,int>>)NULL;
+        // }
+        return largestCavern;
+    }
+    void cullCaverns(){
+        std::vector<std::pair<int,int>> largestCavern = findLargestCavern();
+        std::cout<<"test"<<std::endl;
+        if (largestCavern.size() != 0){
+            for (int x = 0; x < width - 1; x ++){
+                for (int y = 0; y < height - 1; y ++){
+                    map[x + y * width] = WALL;
+                }
+            }
+            for (std::pair<int,int> point: largestCavern){
+                int x = point.first;
+                int y = point.second;
+                map[x + y * width] = NOTHING;
+            }
+        }
+    }
     
     void deleteMap(){
         delete [] map;
@@ -225,6 +254,55 @@ public:
 private:
     int width;
     int height;
+    std::vector<std::vector<std::pair<int,int>>> getAllCaverns(){
+        std::vector<std::pair<int,int>> flooded;// = (std::vector<std::pair<int,int>>)NULL;
+        std::vector<std::vector<std::pair<int,int>>> caverns;// = (std::vector<std::vector<std::pair<int,int>>>)NULL; // list of found caverns
+        for (int x = 0; x < width; x++){
+            for (int y = 0; y < height; y++){
+                if (map[x + y * width] == NOTHING && std::find(flooded.begin(), flooded.end(), std::pair<int,int>(x,y))==flooded.end()){
+                    std::vector<std::pair<int,int>> cavern = getCavernsAt(x,y);
+                    if (cavern.size() != 0){
+                        flooded.insert(flooded.end(), cavern.begin(), cavern.end());
+                        caverns.push_back(cavern);
+                    }
+                }
+            }
+        }
+        
+        return caverns;
+    }
+    std::vector<std::pair<int,int>> getCavernsAt(int x, int y){
+        //Array of points in cavers
+        //Boolean for if cavern has been filled
+        //Loop through following until boolean is satisfied
+        //Check the points to the right, above, below, and right
+        std::vector<std::pair<int,int>> pointsFilled;
+        std::vector<std::pair<int,int>> pointsToBeChecked;
+        pointsToBeChecked.push_back(std::pair<int,int>(x,y));
+        while (!pointsToBeChecked.empty()){
+            int checkX = pointsToBeChecked[0].first;
+            int checkY = pointsToBeChecked[0].second;
+            if (checkX-1 >= 0 && map[checkX - 1 + checkY * width] == NOTHING && std::find(pointsFilled.begin(), pointsFilled.end(), std::pair<int,int> (checkX - 1, checkY)) != pointsFilled.end()){
+                pointsToBeChecked.push_back(std::pair<int,int>(x - 1,y));
+            }
+            if (checkY-1 >= 0 && map[checkX + (checkY - 1) * width] == NOTHING && std::find(pointsFilled.begin(), pointsFilled.end(), std::pair<int,int> (checkX, checkY - 1)) != pointsFilled.end()){
+                pointsToBeChecked.push_back(std::pair<int,int>(x,y - 1));
+            }
+            if (checkX+1 >= width && map[checkX + 1 + checkY * width] == NOTHING && std::find(pointsFilled.begin(), pointsFilled.end(), std::pair<int,int> (checkX + 1, checkY)) != pointsFilled.end()){
+                pointsToBeChecked.push_back(std::pair<int,int>(x + 1,y));
+            }
+            if (checkY+1 >= height && map[checkX + (checkY + 1) * width] == NOTHING && std::find(pointsFilled.begin(), pointsFilled.end(), std::pair<int,int> (checkX, checkY + 1)) != pointsFilled.end()){
+                pointsToBeChecked.push_back(std::pair<int,int>(x,y + 1));
+            }
+            pointsFilled.push_back(std::pair<int,int>(checkX, checkY));
+            pointsToBeChecked.erase(pointsToBeChecked.begin());
+        };
+        //std::cout<<"test"<<std::endl;
+        // if (pointsFilled.size() == 0){
+        //     pointsFilled = (std::vector<std::pair<int,int>>)NULL;
+        // }
+        return pointsFilled;
+    }
 
     int getNeighbors(int x, int y) {
         int neighbors = 0;
@@ -285,19 +363,9 @@ int main()
     uint64_t totalTicks = 0;
     uint64_t totalFramesRendered = 0;
     uint64_t lastTick = 0;
-
-    // for (int i = 0; i < g_kRenderWidth * g_kRenderHeight;i++){
-    //     if ((int)FastRand() % 3 == 1){
-    //         particles[i] = SAND;
-    //     }
-    //     else if ((int)FastRand() % 2 == 1){
-    //         particles[i] = WATER;
-    //     }
-    //     else{
-    //         particles[i] = NOTHING;
-    //     }
-    // }
-    caveGenerator.step(10);
+    
+    caveGenerator.step(20);
+    caveGenerator.cullCaverns();
     particles = caveGenerator.getMap();
     for (int i = 0; i < g_kRenderWidth * g_kRenderHeight;i++){
         pixels[i] = allProperties[particles[i]].pixelColors[FastRand()%3];

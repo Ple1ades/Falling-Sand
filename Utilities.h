@@ -2,6 +2,10 @@
 #include <cstdint>
 #include <string>
 #include <iostream>
+#include <math.h>
+#include <thread>
+#include <vector>
+#include <utility>
 
 
 int32_t e(int32_t result, std::string errorMessage)
