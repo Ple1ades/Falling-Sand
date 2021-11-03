@@ -4,8 +4,9 @@
 
 #include "Utilities.h"
 #include "particles.cpp"
+#include "UI.cpp"
 using namespace PARTICLES;
-
+using namespace UI;
 
 constexpr static const int32_t g_kWindowWidth             = 1920;
 constexpr static const int32_t g_kWindowHeight            = 1080;
@@ -13,6 +14,10 @@ constexpr static const int32_t g_kRenderWidth             = g_kWindowWidth / 3;
 constexpr static const int32_t g_kRenderHeight            = g_kWindowHeight / 3;
 constexpr static const int32_t g_kRenderDeviceFlags       = -1;
 constexpr static const int32_t g_kErrorOccurred           = -1;
+
+constexpr static const int g_kSelectRadius                = 20;
+constexpr static const int g_kSelectPixelsPerSlice        = 10;
+constexpr static const int g_kSelectSlices                = 4;
 
 constexpr static const char* g_kWindowTitle =             "PixelPusher";
 
@@ -127,7 +132,7 @@ int32_t Startup(SDL_Window** ppWindow, SDL_Renderer** ppRenderer, SDL_Texture** 
 
 // Call this within every render loop
 // Fills screen with randomly generated colored pixels
-int32_t Render(SDL_Window* pWindow, SDL_Renderer* pRenderer, SDL_Texture* pTexture, uint32_t * pixels)
+int32_t Render(SDL_Window* pWindow, SDL_Renderer* pRenderer, SDL_Texture* pTexture, uint32_t * pixels, int mouseX, int mouseY, uint32_t colors[])
 {
     // The Back Buffer texture may be stored with an extra bit of width (pitch) on the video card in order to properly
     // align it in VRAM should the width not lie on the correct memory boundary (usually four bytes).
@@ -146,6 +151,10 @@ int32_t Render(SDL_Window* pWindow, SDL_Renderer* pRenderer, SDL_Texture* pTextu
         // Fill texture with randomly colored pixels
         for (uint32_t i = 0; i < g_kRenderWidth * g_kRenderHeight; ++i)
             pPixelBuffer[i] = pixels[i];
+        // UI
+        for (uint32_t i = 0; i < g_kSelectPixelsPerSlice * g_kSelectSlices; ++i){
+            if (mouseX + pointsOnCircle[i].first > 0 && mouseX + pointsOnCircle[i].first < g_kRenderWidth - 1 && mouseY + pointsOnCircle[i].second > 0 && mouseY + pointsOnCircle[i].second < g_kRenderHeight - 1) pPixelBuffer[(mouseX + pointsOnCircle[i].first) + (mouseY + pointsOnCircle[i].second) * g_kRenderWidth] = colors[11];
+        }
         // Unlock the texture in VRAM to let the GPU know we are done writing to it
         SDL_UnlockTexture(pTexture);
 
@@ -165,6 +174,7 @@ int32_t Render(SDL_Window* pWindow, SDL_Renderer* pRenderer, SDL_Texture* pTextu
 
 class CaveGenerator{
 public:
+    bool finished;
     PARTICLETYPES * map;
     CaveGenerator(int _width, int _height, int fillPercent){
         width = _width;
@@ -183,6 +193,7 @@ public:
         return map;
     }
     void step(int steps){
+        finished = false;
         for (int i = 0; i < steps; i++){
             int sum;
             PARTICLETYPES * newMap = (PARTICLETYPES *)malloc(width * height * sizeof(PARTICLETYPES));
@@ -215,94 +226,18 @@ public:
             }
             delete [] newMap;
         }
+        finished = true;
         
     }
 
-    std::vector<std::pair<int,int>> findLargestCavern(){
-        std::vector<std::vector<std::pair<int,int>>> caverns = getAllCaverns();
-        std::vector<std::pair<int,int>> largestCavern;// = (std::vector<std::pair<int,int>>)NULL;
-        for (std::vector<std::pair<int,int>> cavern : caverns){
-            if (cavern.size() > largestCavern.size()){
-                largestCavern = cavern;
-            }
-        }
-        // if (largestCavern.size() == 0){
-        //     largestCavern = (std::vector<std::pair<int,int>>)NULL;
-        // }
-        return largestCavern;
-    }
-    void cullCaverns(){
-        std::vector<std::pair<int,int>> largestCavern = findLargestCavern();
-        std::cout<<"test"<<std::endl;
-        if (largestCavern.size() != 0){
-            for (int x = 0; x < width - 1; x ++){
-                for (int y = 0; y < height - 1; y ++){
-                    map[x + y * width] = WALL;
-                }
-            }
-            for (std::pair<int,int> point: largestCavern){
-                int x = point.first;
-                int y = point.second;
-                map[x + y * width] = NOTHING;
-            }
-        }
-    }
-    
+
+
     void deleteMap(){
         delete [] map;
     }
 private:
     int width;
     int height;
-    std::vector<std::vector<std::pair<int,int>>> getAllCaverns(){
-        std::vector<std::pair<int,int>> flooded;// = (std::vector<std::pair<int,int>>)NULL;
-        std::vector<std::vector<std::pair<int,int>>> caverns;// = (std::vector<std::vector<std::pair<int,int>>>)NULL; // list of found caverns
-        for (int x = 0; x < width; x++){
-            for (int y = 0; y < height; y++){
-                if (map[x + y * width] == NOTHING && std::find(flooded.begin(), flooded.end(), std::pair<int,int>(x,y))==flooded.end()){
-                    std::vector<std::pair<int,int>> cavern = getCavernsAt(x,y);
-                    if (cavern.size() != 0){
-                        flooded.insert(flooded.end(), cavern.begin(), cavern.end());
-                        caverns.push_back(cavern);
-                    }
-                }
-            }
-        }
-        
-        return caverns;
-    }
-    std::vector<std::pair<int,int>> getCavernsAt(int x, int y){
-        //Array of points in cavers
-        //Boolean for if cavern has been filled
-        //Loop through following until boolean is satisfied
-        //Check the points to the right, above, below, and right
-        std::vector<std::pair<int,int>> pointsFilled;
-        std::vector<std::pair<int,int>> pointsToBeChecked;
-        pointsToBeChecked.push_back(std::pair<int,int>(x,y));
-        while (!pointsToBeChecked.empty()){
-            int checkX = pointsToBeChecked[0].first;
-            int checkY = pointsToBeChecked[0].second;
-            if (checkX-1 >= 0 && map[checkX - 1 + checkY * width] == NOTHING && std::find(pointsFilled.begin(), pointsFilled.end(), std::pair<int,int> (checkX - 1, checkY)) != pointsFilled.end()){
-                pointsToBeChecked.push_back(std::pair<int,int>(x - 1,y));
-            }
-            if (checkY-1 >= 0 && map[checkX + (checkY - 1) * width] == NOTHING && std::find(pointsFilled.begin(), pointsFilled.end(), std::pair<int,int> (checkX, checkY - 1)) != pointsFilled.end()){
-                pointsToBeChecked.push_back(std::pair<int,int>(x,y - 1));
-            }
-            if (checkX+1 >= width && map[checkX + 1 + checkY * width] == NOTHING && std::find(pointsFilled.begin(), pointsFilled.end(), std::pair<int,int> (checkX + 1, checkY)) != pointsFilled.end()){
-                pointsToBeChecked.push_back(std::pair<int,int>(x + 1,y));
-            }
-            if (checkY+1 >= height && map[checkX + (checkY + 1) * width] == NOTHING && std::find(pointsFilled.begin(), pointsFilled.end(), std::pair<int,int> (checkX, checkY + 1)) != pointsFilled.end()){
-                pointsToBeChecked.push_back(std::pair<int,int>(x,y + 1));
-            }
-            pointsFilled.push_back(std::pair<int,int>(checkX, checkY));
-            pointsToBeChecked.erase(pointsToBeChecked.begin());
-        };
-        //std::cout<<"test"<<std::endl;
-        // if (pointsFilled.size() == 0){
-        //     pointsFilled = (std::vector<std::pair<int,int>>)NULL;
-        // }
-        return pointsFilled;
-    }
 
     int getNeighbors(int x, int y) {
         int neighbors = 0;
@@ -334,19 +269,24 @@ private:
     }
 
 };
-uint32_t * pixels;
 
+uint32_t * pixels;
 PARTICLETYPES * particles;
 bool leftMouseDown = false;
 bool rightMouseDown = false;
+bool ctrlDown = false;
 int mouseX = 0;
 int mouseY = 0;
-CaveGenerator caveGenerator(g_kRenderWidth, g_kRenderHeight, 50);
+CaveGenerator caveGenerator(g_kRenderWidth, g_kRenderHeight, 48);
+void caveStep(CaveGenerator * cave, int steps){
+    cave->step(steps);
+}
 int main()
 {
 
     pixels = (uint32_t *)malloc(sizeof(uint32_t) * g_kRenderWidth * g_kRenderHeight);
     particles = (PARTICLETYPES *)malloc(sizeof(PARTICLETYPES) * g_kRenderWidth * g_kRenderHeight);
+    getPointsOnCircle(g_kSelectRadius, g_kSelectPixelsPerSlice * g_kSelectSlices);
     SDL_Window* pWindow = nullptr;
     SDL_Renderer* pRenderer = nullptr;
     SDL_Texture* pTexture = nullptr;
@@ -364,8 +304,7 @@ int main()
     uint64_t totalFramesRendered = 0;
     uint64_t lastTick = 0;
     
-    caveGenerator.step(20);
-    caveGenerator.cullCaverns();
+    caveGenerator.step(50);
     particles = caveGenerator.getMap();
     for (int i = 0; i < g_kRenderWidth * g_kRenderHeight;i++){
         pixels[i] = allProperties[particles[i]].pixelColors[FastRand()%3];
@@ -379,7 +318,7 @@ int main()
             
             std::thread particleThread(particleUpdate, particles, g_kRenderWidth, g_kRenderHeight, pixels, colors);
             //particleUpdate(particles, g_kRenderWidth, g_kRenderHeight, pixels, colors);
-            std::thread renderThread(e, Render(pWindow, pRenderer, pTexture, pixels), "Render failed\n");
+            std::thread renderThread(e, Render(pWindow, pRenderer, pTexture, pixels, mouseX, mouseY, colors), "Render failed\n");
 
             SDL_Event event;
             
@@ -404,9 +343,22 @@ int main()
                             case SDLK_ESCAPE:
                                 running = false;
                                 break;
+                            case SDLK_LCTRL:
+                                break;
                             case SDLK_SPACE:
+                                CaveGenerator tempCave(g_kRenderWidth, g_kRenderHeight, 48);
+                                std::thread caveThread(caveStep, &tempCave, 50);
+                                if (tempCave.finished){
+                                    caveThread.join();
+                                    particles = tempCave.getMap();
+                                    for (int i = 0; i < g_kRenderWidth * g_kRenderHeight;i++){
+                                        pixels[i] = allProperties[particles[i]].pixelColors[FastRand()%3];
+                                        //pixels[i] = colors[1];
+                                    }
+                                }
                                 //particleUpdate(particles, g_kRenderWidth, g_kRenderHeight, pixels, colors);
                                 break;
+                            
                         }
                     case SDL_MOUSEBUTTONDOWN:
                         switch(event.button.button){

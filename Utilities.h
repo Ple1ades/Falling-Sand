@@ -7,6 +7,7 @@
 #include <vector>
 #include <utility>
 
+# define M_PI           3.14159265358979323846
 
 int32_t e(int32_t result, std::string errorMessage)
 {
