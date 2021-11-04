@@ -18,12 +18,12 @@ namespace UI{
     }
     void getPointsInsideCircle(int r){
         int points = 0;
-        int h = r;
-        for (int y = -r; y <= r; ++y){
+        int h = r - 1;
+        for (int y = -r + 1; y < r; ++y){
             pointsInCircle.push_back(std::pair<int,int>(0,y));
             ++points;
         }
-        for (int dx = 1; dx <= r; ++dx){
+        for (int dx = 1; dx < r; ++dx){
             while (dx * dx + h*h > r * r && h > 0){
                 h--;
             }

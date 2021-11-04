@@ -153,13 +153,16 @@ int32_t Render(SDL_Window* pWindow, SDL_Renderer* pRenderer, SDL_Texture* pTextu
             pPixelBuffer[i] = pixels[i];
         // UI
         if (shiftDown){
+            for (uint32_t i = 0; i < UIPoints; ++i){
+                //std::cout<< mouseY + pointsInCircle[i].second <<std::endl;
+                if (mouseX + pointsInCircle[i].first > 0 && mouseX + pointsInCircle[i].first < g_kRenderWidth - 1 && mouseY + pointsInCircle[i].second > 0 && mouseY + pointsInCircle[i].second < g_kRenderHeight - 1){
+                    pPixelBuffer[(mouseX + pointsInCircle[i].first) + (mouseY + pointsInCircle[i].second) * g_kRenderWidth] = (pPixelBuffer[(mouseX + pointsInCircle[i].first) + (mouseY + pointsInCircle[i].second) * g_kRenderWidth] + colors[11]) * 0.5;
+                }
+            }
             for (uint32_t i = 0; i < g_kSelectPixelsPerSlice * g_kSelectSlices; ++i){
                 if (mouseX + pointsOnCircle[i].first > 0 && mouseX + pointsOnCircle[i].first < g_kRenderWidth - 1 && mouseY + pointsOnCircle[i].second > 0 && mouseY + pointsOnCircle[i].second < g_kRenderHeight - 1) pPixelBuffer[(mouseX + pointsOnCircle[i].first) + (mouseY + pointsOnCircle[i].second) * g_kRenderWidth] = colors[11];
             }
-            for (uint32_t i = 0; i < UIPoints; ++i){
-                //std::cout<< mouseY + pointsInCircle[i].second <<std::endl;
-                if (mouseX + pointsInCircle[i].first > 0 && mouseX + pointsInCircle[i].first < g_kRenderWidth - 1 && mouseY + pointsInCircle[i].second > 0 && mouseY + pointsInCircle[i].second < g_kRenderHeight - 1) pPixelBuffer[(mouseX + pointsInCircle[i].first) + (mouseY + pointsInCircle[i].second) * g_kRenderWidth] += colors[11]/2;
-            }
+            
         }
         
         // Unlock the texture in VRAM to let the GPU know we are done writing to it
