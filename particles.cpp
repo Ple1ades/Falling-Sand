@@ -27,7 +27,7 @@ uint32_t colors[] = {
     //wall color 3
     ARGB((uint32_t)80, (uint32_t)80, (uint32_t)80, 0),
     //mouse UI
-    ARGB((uint32_t)21, (uint32_t)244, (uint32_t)238, 0)
+    ARGB((uint32_t)54, (uint32_t)61, (uint32_t)87, 0)
 };
 
 

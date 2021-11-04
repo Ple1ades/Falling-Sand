@@ -16,7 +16,7 @@ constexpr static const int32_t g_kRenderDeviceFlags       = -1;
 constexpr static const int32_t g_kErrorOccurred           = -1;
 
 constexpr static const int g_kSelectRadius                = 20;
-constexpr static const int g_kSelectPixelsPerSlice        = 10;
+constexpr static const int g_kSelectPixelsPerSlice        = 31;
 constexpr static const int g_kSelectSlices                = 4;
 
 constexpr static const char* g_kWindowTitle =             "PixelPusher";
@@ -132,7 +132,7 @@ int32_t Startup(SDL_Window** ppWindow, SDL_Renderer** ppRenderer, SDL_Texture** 
 
 // Call this within every render loop
 // Fills screen with randomly generated colored pixels
-int32_t Render(SDL_Window* pWindow, SDL_Renderer* pRenderer, SDL_Texture* pTexture, uint32_t * pixels, int mouseX, int mouseY, uint32_t colors[])
+int32_t Render(SDL_Window* pWindow, SDL_Renderer* pRenderer, SDL_Texture* pTexture, uint32_t * pixels, int mouseX, int mouseY, uint32_t colors[], bool shiftDown)
 {
     // The Back Buffer texture may be stored with an extra bit of width (pitch) on the video card in order to properly
     // align it in VRAM should the width not lie on the correct memory boundary (usually four bytes).
@@ -152,9 +152,16 @@ int32_t Render(SDL_Window* pWindow, SDL_Renderer* pRenderer, SDL_Texture* pTextu
         for (uint32_t i = 0; i < g_kRenderWidth * g_kRenderHeight; ++i)
             pPixelBuffer[i] = pixels[i];
         // UI
-        for (uint32_t i = 0; i < g_kSelectPixelsPerSlice * g_kSelectSlices; ++i){
-            if (mouseX + pointsOnCircle[i].first > 0 && mouseX + pointsOnCircle[i].first < g_kRenderWidth - 1 && mouseY + pointsOnCircle[i].second > 0 && mouseY + pointsOnCircle[i].second < g_kRenderHeight - 1) pPixelBuffer[(mouseX + pointsOnCircle[i].first) + (mouseY + pointsOnCircle[i].second) * g_kRenderWidth] = colors[11];
+        if (shiftDown){
+            for (uint32_t i = 0; i < g_kSelectPixelsPerSlice * g_kSelectSlices; ++i){
+                if (mouseX + pointsOnCircle[i].first > 0 && mouseX + pointsOnCircle[i].first < g_kRenderWidth - 1 && mouseY + pointsOnCircle[i].second > 0 && mouseY + pointsOnCircle[i].second < g_kRenderHeight - 1) pPixelBuffer[(mouseX + pointsOnCircle[i].first) + (mouseY + pointsOnCircle[i].second) * g_kRenderWidth] = colors[11];
+            }
+            for (uint32_t i = 0; i < UIPoints; ++i){
+                //std::cout<< mouseY + pointsInCircle[i].second <<std::endl;
+                if (mouseX + pointsInCircle[i].first > 0 && mouseX + pointsInCircle[i].first < g_kRenderWidth - 1 && mouseY + pointsInCircle[i].second > 0 && mouseY + pointsInCircle[i].second < g_kRenderHeight - 1) pPixelBuffer[(mouseX + pointsInCircle[i].first) + (mouseY + pointsInCircle[i].second) * g_kRenderWidth] += colors[11]/2;
+            }
         }
+        
         // Unlock the texture in VRAM to let the GPU know we are done writing to it
         SDL_UnlockTexture(pTexture);
 
@@ -174,13 +181,16 @@ int32_t Render(SDL_Window* pWindow, SDL_Renderer* pRenderer, SDL_Texture* pTextu
 
 class CaveGenerator{
 public:
-    bool finished;
     PARTICLETYPES * map;
-    CaveGenerator(int _width, int _height, int fillPercent){
+    int fillPercent;
+    CaveGenerator(int _width, int _height, int _fillPercent){
         width = _width;
         height = _height;
+        fillPercent = _fillPercent;
+    }
+    void init(){
         map = (PARTICLETYPES *)malloc(width * height * sizeof(PARTICLETYPES));
-        for (int i = 0; i < _width * _height; ++i){
+        for (int i = 0; i < width * height; ++i){
             if (FastRand() % 100 <= fillPercent){
                 map[i] = WALL;
             }
@@ -193,7 +203,6 @@ public:
         return map;
     }
     void step(int steps){
-        finished = false;
         for (int i = 0; i < steps; i++){
             int sum;
             PARTICLETYPES * newMap = (PARTICLETYPES *)malloc(width * height * sizeof(PARTICLETYPES));
@@ -226,7 +235,6 @@ public:
             }
             delete [] newMap;
         }
-        finished = true;
         
     }
 
@@ -274,19 +282,19 @@ uint32_t * pixels;
 PARTICLETYPES * particles;
 bool leftMouseDown = false;
 bool rightMouseDown = false;
-bool ctrlDown = false;
+bool shiftDown = false;
 int mouseX = 0;
 int mouseY = 0;
 CaveGenerator caveGenerator(g_kRenderWidth, g_kRenderHeight, 48);
-void caveStep(CaveGenerator * cave, int steps){
-    cave->step(steps);
-}
+CaveGenerator tempCave(g_kRenderWidth, g_kRenderHeight, 48);
 int main()
 {
 
     pixels = (uint32_t *)malloc(sizeof(uint32_t) * g_kRenderWidth * g_kRenderHeight);
     particles = (PARTICLETYPES *)malloc(sizeof(PARTICLETYPES) * g_kRenderWidth * g_kRenderHeight);
+    getPointsInsideCircle(g_kSelectRadius);
     getPointsOnCircle(g_kSelectRadius, g_kSelectPixelsPerSlice * g_kSelectSlices);
+    
     SDL_Window* pWindow = nullptr;
     SDL_Renderer* pRenderer = nullptr;
     SDL_Texture* pTexture = nullptr;
@@ -303,7 +311,7 @@ int main()
     uint64_t totalTicks = 0;
     uint64_t totalFramesRendered = 0;
     uint64_t lastTick = 0;
-    
+    caveGenerator.init();
     caveGenerator.step(50);
     particles = caveGenerator.getMap();
     for (int i = 0; i < g_kRenderWidth * g_kRenderHeight;i++){
@@ -318,49 +326,52 @@ int main()
             
             std::thread particleThread(particleUpdate, particles, g_kRenderWidth, g_kRenderHeight, pixels, colors);
             //particleUpdate(particles, g_kRenderWidth, g_kRenderHeight, pixels, colors);
-            std::thread renderThread(e, Render(pWindow, pRenderer, pTexture, pixels, mouseX, mouseY, colors), "Render failed\n");
+            std::thread renderThread(e, Render(pWindow, pRenderer, pTexture, pixels, mouseX, mouseY, colors, shiftDown), "Render failed\n");
 
             SDL_Event event;
-            
-            // Process all events and return whether or not to quit
             while (SDL_PollEvent(&event))
             {
-                mouseX = floor(event.button.x / (g_kWindowWidth / g_kRenderWidth));
-                mouseY = floor(event.button.y / (g_kWindowHeight / g_kRenderHeight));
-                // Handle relevant SDL events
-                switch (event.type)
-                {
-                    
-                    default:
-                        break;
-                    case SDL_QUIT:
+                
+                    if (event.type == SDL_MOUSEMOTION){
+                        mouseX = floor(event.button.x / (g_kWindowWidth / g_kRenderWidth));
+                        mouseY = floor(event.button.y / (g_kWindowHeight / g_kRenderHeight));
+                        
+                    }
+                    if (event.type == SDL_QUIT){
                         running = false;
-                        break;
-                    case SDL_KEYDOWN:
+                    }
+                    if (event.type == SDL_KEYDOWN){
                         switch(event.key.keysym.sym){
                             default:
                                 break;
                             case SDLK_ESCAPE:
                                 running = false;
                                 break;
-                            case SDLK_LCTRL:
-                                break;
-                            case SDLK_SPACE:
-                                CaveGenerator tempCave(g_kRenderWidth, g_kRenderHeight, 48);
-                                std::thread caveThread(caveStep, &tempCave, 50);
-                                if (tempCave.finished){
-                                    caveThread.join();
-                                    particles = tempCave.getMap();
-                                    for (int i = 0; i < g_kRenderWidth * g_kRenderHeight;i++){
-                                        pixels[i] = allProperties[particles[i]].pixelColors[FastRand()%3];
-                                        //pixels[i] = colors[1];
-                                    }
-                                }
-                                //particleUpdate(particles, g_kRenderWidth, g_kRenderHeight, pixels, colors);
-                                break;
                             
+                            case SDLK_SPACE:
+                                tempCave.init();
+                                tempCave.step(50);
+                                particles = tempCave.getMap();
+                                for (int i = 0; i < g_kRenderWidth * g_kRenderHeight;i++){
+                                    pixels[i] = allProperties[particles[i]].pixelColors[FastRand()%3];
+                                    //pixels[i] = colors[1];
+                                } 
+                                break;
+                            case SDLK_LSHIFT:
+                                shiftDown = true;
+                                break;
                         }
-                    case SDL_MOUSEBUTTONDOWN:
+                    }
+                    if (event.type == SDL_KEYUP){
+                        switch(event.key.keysym.sym){
+                            default:
+                                break;
+                            case SDLK_LSHIFT:
+                                shiftDown = false;
+                                break;
+                        }
+                    }
+                    if (event.type == SDL_MOUSEBUTTONDOWN){
                         switch(event.button.button){
                             default:
                                 break;
@@ -371,8 +382,9 @@ int main()
                                 rightMouseDown = true;
                                 break;
                         }
-                        break;
-                    case SDL_MOUSEBUTTONUP:
+                    }
+                        
+                    if (event.type == SDL_MOUSEBUTTONUP){
                         switch (event.button.button){
                             default:
                                 break;
@@ -383,8 +395,10 @@ int main()
                                 rightMouseDown = false;
                                 break;
                         }
-                    
-                }
+                    }
+                        
+
+                
             }
 
             if (leftMouseDown && totalFramesRendered % 2 == 0){
