@@ -132,7 +132,7 @@ int32_t Startup(SDL_Window** ppWindow, SDL_Renderer** ppRenderer, SDL_Texture** 
 
 // Call this within every render loop
 // Fills screen with randomly generated colored pixels
-int32_t Render(SDL_Window* pWindow, SDL_Renderer* pRenderer, SDL_Texture* pTexture, uint32_t * pixels, int mouseX, int mouseY, uint32_t colors[], bool shiftDown)
+int32_t Render(SDL_Window* pWindow, SDL_Renderer* pRenderer, SDL_Texture* pTexture, uint32_t * pixels, int mouseX, int mouseY, int selectPointX, int selectPointY, uint32_t colors[], bool shiftDown)
 {
     // The Back Buffer texture may be stored with an extra bit of width (pitch) on the video card in order to properly
     // align it in VRAM should the width not lie on the correct memory boundary (usually four bytes).
@@ -152,17 +152,39 @@ int32_t Render(SDL_Window* pWindow, SDL_Renderer* pRenderer, SDL_Texture* pTextu
         for (uint32_t i = 0; i < g_kRenderWidth * g_kRenderHeight; ++i)
             pPixelBuffer[i] = pixels[i];
         // UI
+        
         if (shiftDown){
+            uint32_t pixelR;
+            uint32_t pixelG;
+            uint32_t pixelB;
+            uint32_t pixelAlpha;
+            uint32_t layerR;
+            uint32_t layerG;
+            uint32_t layerB;
+            uint32_t layerAlpha;
             for (uint32_t i = 0; i < UIPoints; ++i){
                 //std::cout<< mouseY + pointsInCircle[i].second <<std::endl;
-                if (mouseX + pointsInCircle[i].first > 0 && mouseX + pointsInCircle[i].first < g_kRenderWidth - 1 && mouseY + pointsInCircle[i].second > 0 && mouseY + pointsInCircle[i].second < g_kRenderHeight - 1){
-                    pPixelBuffer[(mouseX + pointsInCircle[i].first) + (mouseY + pointsInCircle[i].second) * g_kRenderWidth] = (pPixelBuffer[(mouseX + pointsInCircle[i].first) + (mouseY + pointsInCircle[i].second) * g_kRenderWidth] + colors[11]) * 0.5;
+                if (selectPointX + pointsInCircle[i].first >= 0 && selectPointX + pointsInCircle[i].first < g_kRenderWidth && selectPointY + pointsInCircle[i].second >= 0 && selectPointY + pointsInCircle[i].second < g_kRenderHeight){
+                    pixelR = ( *(RGB *)&pPixelBuffer[(selectPointX + pointsInCircle[i].first) + (selectPointY + pointsInCircle[i].second) * g_kRenderWidth]).r * 0.3;
+                    pixelG = ( *(RGB *)&pPixelBuffer[(selectPointX + pointsInCircle[i].first) + (selectPointY + pointsInCircle[i].second) * g_kRenderWidth]).g * 0.3;
+                    pixelB = ( *(RGB *)&pPixelBuffer[(selectPointX + pointsInCircle[i].first) + (selectPointY + pointsInCircle[i].second) * g_kRenderWidth]).b * 0.3;
+                    pixelAlpha = ( *(RGB *)&pPixelBuffer[(selectPointX + pointsInCircle[i].first) + (selectPointY + pointsInCircle[i].second) * g_kRenderWidth]).alpha * 0.3;
+                    layerR = ( *(RGB *)&colors[1]).r * (1 - 0.3);
+                    layerG = ( *(RGB *)&colors[1]).g * (1 - 0.3);
+                    layerB = ( *(RGB *)&colors[1]).b * (1 - 0.3);
+                    layerAlpha = ( *(RGB *)&colors[1]).alpha * (1 - 0.3);
+                    pPixelBuffer[(selectPointX + pointsInCircle[i].first) + (selectPointY + pointsInCircle[i].second) * g_kRenderWidth] = (ARGB(pixelR + layerR, pixelG + layerG, pixelB + layerB, pixelAlpha + layerAlpha));
                 }
             }
             for (uint32_t i = 0; i < g_kSelectPixelsPerSlice * g_kSelectSlices; ++i){
-                if (mouseX + pointsOnCircle[i].first > 0 && mouseX + pointsOnCircle[i].first < g_kRenderWidth - 1 && mouseY + pointsOnCircle[i].second > 0 && mouseY + pointsOnCircle[i].second < g_kRenderHeight - 1) pPixelBuffer[(mouseX + pointsOnCircle[i].first) + (mouseY + pointsOnCircle[i].second) * g_kRenderWidth] = colors[11];
+                if (selectPointX + pointsOnCircle[i].first >= 0 && selectPointX + pointsOnCircle[i].first < g_kRenderWidth  && selectPointY + pointsOnCircle[i].second >= 0 && selectPointY + pointsOnCircle[i].second < g_kRenderHeight) pPixelBuffer[(selectPointX + pointsOnCircle[i].first) + (selectPointY + pointsOnCircle[i].second) * g_kRenderWidth] = colors[11];
             }
-            
+            getSlice(std::pair<int,int>(mouseX - selectPointX, mouseY - selectPointY), g_kSelectSlices, g_kSelectRadius);
+            for (uint32_t i = 0; i < pointsOnSlice.size(); i++){
+                if (selectPointX + pointsOnSlice[i].first >= 0 && selectPointX + pointsOnSlice[i].first < g_kRenderWidth && selectPointY + pointsOnSlice[i].second >= 0 && selectPointY + pointsOnSlice[i].second < g_kRenderWidth){
+                    pPixelBuffer[(selectPointX + pointsOnSlice[i].first + (selectPointY + pointsOnSlice[i].second) * g_kRenderWidth)] = colors[11];
+                }
+            }
         }
         
         // Unlock the texture in VRAM to let the GPU know we are done writing to it
@@ -286,6 +308,8 @@ PARTICLETYPES * particles;
 bool leftMouseDown = false;
 bool rightMouseDown = false;
 bool shiftDown = false;
+int selectPointX = 0;
+int selectPointY = 0;
 int mouseX = 0;
 int mouseY = 0;
 CaveGenerator caveGenerator(g_kRenderWidth, g_kRenderHeight, 48);
@@ -329,7 +353,7 @@ int main()
             
             std::thread particleThread(particleUpdate, particles, g_kRenderWidth, g_kRenderHeight, pixels, colors);
             //particleUpdate(particles, g_kRenderWidth, g_kRenderHeight, pixels, colors);
-            std::thread renderThread(e, Render(pWindow, pRenderer, pTexture, pixels, mouseX, mouseY, colors, shiftDown), "Render failed\n");
+            std::thread renderThread(e, Render(pWindow, pRenderer, pTexture, pixels, mouseX, mouseY, selectPointX, selectPointY, colors, shiftDown), "Render failed\n");
 
             SDL_Event event;
             while (SDL_PollEvent(&event))
@@ -362,6 +386,7 @@ int main()
                                 break;
                             case SDLK_LSHIFT:
                                 shiftDown = true;
+                                
                                 break;
                         }
                     }
@@ -410,7 +435,10 @@ int main()
             if (rightMouseDown && totalFramesRendered % 2 == 0){
                 addParticle(particles, mouseX, mouseY, g_kRenderWidth, pixels, colors, WATER);
             }
-
+            if (shiftDown == false){
+                selectPointX = mouseX;
+                selectPointY = mouseY;
+            }
             uint64_t currentTick = SDL_GetPerformanceCounter();
             totalTicks += currentTick - lastTick;
             lastTick = currentTick;

@@ -29,7 +29,12 @@ uint32_t colors[] = {
     //mouse UI
     ARGB((uint32_t)54, (uint32_t)61, (uint32_t)87, 0)
 };
-
+struct RGB{
+    unsigned int b:8;
+    unsigned int g:8;
+    unsigned int r:8;
+    unsigned int alpha:8;
+};
 
 
 namespace PARTICLES{
