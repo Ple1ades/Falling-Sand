@@ -62,9 +62,10 @@ namespace UI{
 
         for (int i = 0; i < totalPoints; i++){
             if (theta * i< angle && angle <= theta * i + 1){
-                points = getPoints(std::pair<int,int> (0,0), std::pair<int,int>((int)cos(theta * i * M_PI / 180),(int)cos(theta * (i + 1) * M_PI / 180)), r);
-                pointsOnSlice.insert(pointsOnSlice.end(), points.begin(), points.end());
+                
             }
+            points = getPoints(std::pair<int,int> (0,0), std::pair<int,int>((int)cos(theta * i * M_PI / 180) * r,(int)cos(theta * (i + 1) * M_PI / 180) * r), r);
+            pointsOnSlice.insert(pointsOnSlice.end(), points.begin(), points.end());
             
         }
     }

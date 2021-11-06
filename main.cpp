@@ -17,7 +17,7 @@ constexpr static const int32_t g_kErrorOccurred           = -1;
 
 constexpr static const int g_kSelectRadius                = 20;
 constexpr static const int g_kSelectPixelsPerSlice        = 31;
-constexpr static const int g_kSelectSlices                = 4;
+constexpr static const int g_kSelectSlices                = 3;
 
 constexpr static const char* g_kWindowTitle =             "PixelPusher";
 
