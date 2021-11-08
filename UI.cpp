@@ -1,7 +1,10 @@
 #include "Utilities.h"
-
+#include "./src/include/SDL.h"
 
 namespace UI{
+    std::map<const char *, SDL_Surface *> sprites;
+    std::map<const char *, std::map<std::pair<int,int>,uint32_t>> spritePixels;
+    std::map<const char *, std::pair<int,int>> spritePositions;
     std::vector<std::pair<int,int>> pointsOnCircle;
     std::vector<std::pair<int,int>> pointsInCircle;
     std::vector<std::pair<int,int>> pointsOnSlice;
@@ -14,6 +17,19 @@ namespace UI{
 
             pointsOnCircle.push_back(std::pair<int,int>(std::round(r * std::cos(angle)),std::round(r*std::sin(angle))));
             pointsInCircle.push_back(std::pair<int,int>(std::round(r * std::cos(angle))-1,std::round(r*std::sin(angle))-1));
+        }
+    }
+    
+    Uint32 getPixel(SDL_Surface *surface, int x, int y, int width)
+    {
+        return ((Uint32 *)surface->pixels)[(width * y) + x];
+    }
+    void addSprite(const char * spriteName, const char * file, int width){
+        sprites[spriteName] =  SDL_LoadBMP(file);
+        for (int x = 0; x < 25; ++x){
+            for (int y = 0; y < 25; ++y){
+                spritePixels[spriteName][std::pair<int,int>(x,y)] = getPixel(sprites[spriteName], x, y, width);
+            }
         }
     }
     void getPointsInsideCircle(int r){
@@ -43,30 +59,38 @@ namespace UI{
         int xdiff = point1.first - point2.first;
         double slope = (double)(ydiff) / (xdiff);
         double x, y;
+
         for (double i = 0; i < r; i++){
             y = (slope == 0) ? 0 : -ydiff * i/r;
-            x = (slope == 0) ? xdiff * (9 / r) : y / slope;
+            x = (slope == 0) ? -xdiff * (i / r) : y / slope;
             points.push_back(std::pair<int,int>((int)round(x) + point1.first, (int)round(y) + point1.second));
         }
         points.push_back(point2);
         return points;
     }
-    void getSlice(std::pair<int,int> point, int totalPoints, int r){
+    void assignSpritePositions(const char * spriteName, int totalPoints, int slice, int r){
+        spritePositions[spriteName] = std::pair<int,int>(std::pair<int,int>(round(cos((slice + 0.5) * (360/totalPoints) * M_PI / 180) * -r / 1.6) - 6, round(sin((slice + 0.5) * 360/totalPoints * M_PI / 180) * -r / 1.6) - 6));
+    }
+    int getSlice(std::pair<int,int> point, int totalPoints, int r){
         double theta = (360/totalPoints);
-        double angle = (atan2(point.second, point.first) * 180 / M_PI);
+        double angle = (atan2(point.second, point.first) * 180 / M_PI) + 180;
         std::pair<int,int> edgePoint;
         edgePoint = point;
         pointsOnSlice.clear();
-        std::vector<std::pair<int,int>> points = getPoints(std::pair<int,int>(0,0),point,floor(sqrt(point.first * point.first + point.second * point.second)) + 1);
-        pointsOnSlice.insert(pointsOnSlice.end(), points.begin(), points.end());
-
+        std::vector<std::pair<int,int>> points;
         for (int i = 0; i < totalPoints; i++){
-            if (theta * i< angle && angle <= theta * i + 1){
-                
-            }
-            points = getPoints(std::pair<int,int> (0,0), std::pair<int,int>((int)cos(theta * i * M_PI / 180) * r,(int)cos(theta * (i + 1) * M_PI / 180) * r), r);
-            pointsOnSlice.insert(pointsOnSlice.end(), points.begin(), points.end());
             
+            if (theta * i< angle && angle <= theta * (i + 1)){
+                
+                points = getPoints(std::pair<int,int> (0,0), std::pair<int,int>(cos( ((i) * theta) * M_PI / 180) * -r,sin(((i) * theta) * M_PI / 180) * -r), r);
+                pointsOnSlice.insert(pointsOnSlice.end(), points.begin(), points.end());
+                
+                points = getPoints(std::pair<int,int> (0,0), std::pair<int,int>(cos( ((i + 1 ) * theta) * M_PI / 180) * -r,sin(((i + 1) * theta) * M_PI / 180) * -r), r);
+                pointsOnSlice.insert(pointsOnSlice.end(), points.begin(), points.end());
+                
+                return i;
+            }
         }
+        return 0;
     }
 };

@@ -17,10 +17,11 @@ constexpr static const int32_t g_kErrorOccurred           = -1;
 
 constexpr static const int g_kSelectRadius                = 20;
 constexpr static const int g_kSelectPixelsPerSlice        = 31;
-constexpr static const int g_kSelectSlices                = 3;
+constexpr static const int g_kSelectSlices                = 5;
 
 constexpr static const char* g_kWindowTitle =             "PixelPusher";
 
+int slice = 0;
 
 SDL_Window* CreateCenteredWindow(uint32_t width, uint32_t height, std::string title)
 {
@@ -84,12 +85,18 @@ void Shutdown(SDL_Window** ppWindow, SDL_Renderer** ppRenderer, SDL_Texture** pp
         SDL_DestroyWindow(*ppWindow);
         *ppWindow = nullptr;
     }
+    for (auto it = sprites.begin(); it != sprites.end(); ++it){
+        SDL_FreeSurface(sprites[it->first]);
+    }
 }
 
 // Initialize SDL Components 
 int32_t Startup(SDL_Window** ppWindow, SDL_Renderer** ppRenderer, SDL_Texture** ppTexture)
 {
     SDL_Init(SDL_INIT_VIDEO);
+
+    addSprite("Water drop-mini", "Sprites/WaterDrop-mini.bmp", 16);
+    assignSpritePositions("Water drop-mini", g_kSelectSlices, 1, g_kSelectRadius);
 
     if (e(!ppWindow, "Potiner to Window* was null\n")) return -1;
 
@@ -165,24 +172,30 @@ int32_t Render(SDL_Window* pWindow, SDL_Renderer* pRenderer, SDL_Texture* pTextu
             for (uint32_t i = 0; i < UIPoints; ++i){
                 //std::cout<< mouseY + pointsInCircle[i].second <<std::endl;
                 if (selectPointX + pointsInCircle[i].first >= 0 && selectPointX + pointsInCircle[i].first < g_kRenderWidth && selectPointY + pointsInCircle[i].second >= 0 && selectPointY + pointsInCircle[i].second < g_kRenderHeight){
-                    pixelR = ( *(RGB *)&pPixelBuffer[(selectPointX + pointsInCircle[i].first) + (selectPointY + pointsInCircle[i].second) * g_kRenderWidth]).r * 0.3;
-                    pixelG = ( *(RGB *)&pPixelBuffer[(selectPointX + pointsInCircle[i].first) + (selectPointY + pointsInCircle[i].second) * g_kRenderWidth]).g * 0.3;
-                    pixelB = ( *(RGB *)&pPixelBuffer[(selectPointX + pointsInCircle[i].first) + (selectPointY + pointsInCircle[i].second) * g_kRenderWidth]).b * 0.3;
-                    pixelAlpha = ( *(RGB *)&pPixelBuffer[(selectPointX + pointsInCircle[i].first) + (selectPointY + pointsInCircle[i].second) * g_kRenderWidth]).alpha * 0.3;
-                    layerR = ( *(RGB *)&colors[1]).r * (1 - 0.3);
-                    layerG = ( *(RGB *)&colors[1]).g * (1 - 0.3);
-                    layerB = ( *(RGB *)&colors[1]).b * (1 - 0.3);
-                    layerAlpha = ( *(RGB *)&colors[1]).alpha * (1 - 0.3);
+                    pixelR = ( *(RGB *)&pPixelBuffer[(selectPointX + pointsInCircle[i].first) + (selectPointY + pointsInCircle[i].second) * g_kRenderWidth]).r * 0.5;
+                    pixelG = ( *(RGB *)&pPixelBuffer[(selectPointX + pointsInCircle[i].first) + (selectPointY + pointsInCircle[i].second) * g_kRenderWidth]).g * 0.5;
+                    pixelB = ( *(RGB *)&pPixelBuffer[(selectPointX + pointsInCircle[i].first) + (selectPointY + pointsInCircle[i].second) * g_kRenderWidth]).b * 0.5;
+                    pixelAlpha = ( *(RGB *)&pPixelBuffer[(selectPointX + pointsInCircle[i].first) + (selectPointY + pointsInCircle[i].second) * g_kRenderWidth]).alpha * 0.5;
+                    layerR = ( *(RGB *)&colors[0]).r * (1 - 0.5);
+                    layerG = ( *(RGB *)&colors[0]).g * (1 - 0.5);
+                    layerB = ( *(RGB *)&colors[0]).b * (1 - 0.5);
+                    layerAlpha = ( *(RGB *)&colors[0]).alpha * (1 - 0.5);
                     pPixelBuffer[(selectPointX + pointsInCircle[i].first) + (selectPointY + pointsInCircle[i].second) * g_kRenderWidth] = (ARGB(pixelR + layerR, pixelG + layerG, pixelB + layerB, pixelAlpha + layerAlpha));
                 }
             }
             for (uint32_t i = 0; i < g_kSelectPixelsPerSlice * g_kSelectSlices; ++i){
                 if (selectPointX + pointsOnCircle[i].first >= 0 && selectPointX + pointsOnCircle[i].first < g_kRenderWidth  && selectPointY + pointsOnCircle[i].second >= 0 && selectPointY + pointsOnCircle[i].second < g_kRenderHeight) pPixelBuffer[(selectPointX + pointsOnCircle[i].first) + (selectPointY + pointsOnCircle[i].second) * g_kRenderWidth] = colors[11];
             }
-            getSlice(std::pair<int,int>(mouseX - selectPointX, mouseY - selectPointY), g_kSelectSlices, g_kSelectRadius);
+            slice = getSlice(std::pair<int,int>(mouseX - selectPointX, mouseY - selectPointY), g_kSelectSlices, g_kSelectRadius);
             for (uint32_t i = 0; i < pointsOnSlice.size(); i++){
                 if (selectPointX + pointsOnSlice[i].first >= 0 && selectPointX + pointsOnSlice[i].first < g_kRenderWidth && selectPointY + pointsOnSlice[i].second >= 0 && selectPointY + pointsOnSlice[i].second < g_kRenderWidth){
                     pPixelBuffer[(selectPointX + pointsOnSlice[i].first + (selectPointY + pointsOnSlice[i].second) * g_kRenderWidth)] = colors[11];
+                }
+            }
+            for (int x = 0; x < 16; ++x){
+                for (int y = 0; y < 16; ++y){
+                    if (spritePixels["Water drop-mini"][std::pair<int,int>(x,y)] != 0) pPixelBuffer[((x + selectPointX + spritePositions["Water drop-mini"].first) + (y + selectPointY + spritePositions["Water drop-mini"].second) * g_kRenderWidth)] = spritePixels["Water drop-mini"][std::pair<int,int>(x,y)];
+                    
                 }
             }
         }
@@ -312,8 +325,10 @@ int selectPointX = 0;
 int selectPointY = 0;
 int mouseX = 0;
 int mouseY = 0;
+
 CaveGenerator caveGenerator(g_kRenderWidth, g_kRenderHeight, 48);
 CaveGenerator tempCave(g_kRenderWidth, g_kRenderHeight, 48);
+PARTICLETYPES currentCreate = SAND;
 int main()
 {
 
@@ -405,6 +420,18 @@ int main()
                                 break;
                             case SDL_BUTTON_LEFT:
                                 leftMouseDown = true;
+                                if (shiftDown){
+                                    switch (slice){
+                                        default:
+                                            break;
+                                        case 0:
+                                            currentCreate = SAND;
+                                            break;
+                                        case 1:
+                                            currentCreate = WATER;
+                                            break;
+                                    }
+                                }
                                 break;
                             case SDL_BUTTON_RIGHT:
                                 rightMouseDown = true;
@@ -429,11 +456,11 @@ int main()
                 
             }
 
-            if (leftMouseDown && totalFramesRendered % 2 == 0){
-                addParticle(particles, mouseX, mouseY, g_kRenderWidth, pixels, colors, SAND);
+            if (leftMouseDown && totalFramesRendered % 2 == 0 && shiftDown == false){
+                addParticle(particles, mouseX, mouseY, g_kRenderWidth, pixels, colors, currentCreate);
             }
-            if (rightMouseDown && totalFramesRendered % 2 == 0){
-                addParticle(particles, mouseX, mouseY, g_kRenderWidth, pixels, colors, WATER);
+            if (rightMouseDown && totalFramesRendered % 2 == 0 && shiftDown == false){
+                removeParticle(particles, mouseX, mouseY, g_kRenderWidth, pixels, colors);
             }
             if (shiftDown == false){
                 selectPointX = mouseX;
