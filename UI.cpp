@@ -26,8 +26,9 @@ namespace UI{
     }
     void addSprite(const char * spriteName, const char * file, int width){
         sprites[spriteName] =  SDL_LoadBMP(file);
-        for (int x = 0; x < 25; ++x){
-            for (int y = 0; y < 25; ++y){
+        
+        for (int x = 0; x < 16; ++x){
+            for (int y = 0; y < 16; ++y){
                 spritePixels[spriteName][std::pair<int,int>(x,y)] = getPixel(sprites[spriteName], x, y, width);
             }
         }
@@ -69,7 +70,7 @@ namespace UI{
         return points;
     }
     void assignSpritePositions(const char * spriteName, int totalPoints, int slice, int r){
-        spritePositions[spriteName] = std::pair<int,int>(std::pair<int,int>(round(cos((slice + 0.5) * (360/totalPoints) * M_PI / 180) * -r / 1.6) - 6, round(sin((slice + 0.5) * 360/totalPoints * M_PI / 180) * -r / 1.6) - 6));
+        spritePositions[spriteName] = std::pair<int,int>(std::pair<int,int>(round(cos((slice + 0.5) * (360/totalPoints) * M_PI / 180) * -r / 1.7) - 6, round(sin((slice + 0.5) * 360/totalPoints * M_PI / 180) * -r / 1.7) - 6));
     }
     int getSlice(std::pair<int,int> point, int totalPoints, int r){
         double theta = (360/totalPoints);

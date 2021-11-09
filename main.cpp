@@ -15,9 +15,9 @@ constexpr static const int32_t g_kRenderHeight            = g_kWindowHeight / 3;
 constexpr static const int32_t g_kRenderDeviceFlags       = -1;
 constexpr static const int32_t g_kErrorOccurred           = -1;
 
-constexpr static const int g_kSelectRadius                = 20;
-constexpr static const int g_kSelectPixelsPerSlice        = 31;
-constexpr static const int g_kSelectSlices                = 5;
+constexpr static const int g_kSelectRadius                = 30;
+constexpr static const int g_kSelectPixelsPerSlice        = 63;
+constexpr static const int g_kSelectSlices                = 3;
 
 constexpr static const char* g_kWindowTitle =             "PixelPusher";
 
@@ -97,6 +97,13 @@ int32_t Startup(SDL_Window** ppWindow, SDL_Renderer** ppRenderer, SDL_Texture** 
 
     addSprite("Water drop-mini", "Sprites/WaterDrop-mini.bmp", 16);
     assignSpritePositions("Water drop-mini", g_kSelectSlices, 1, g_kSelectRadius);
+
+    addSprite("Sand-mini", "Sprites/Sand-mini.bmp", 16);
+    assignSpritePositions("Sand-mini", g_kSelectSlices, 0, g_kSelectRadius);
+
+    addSprite("Stone-mini", "Sprites/Stone-mini.bmp", 16);
+    assignSpritePositions("Stone-mini", g_kSelectSlices, 2, g_kSelectRadius);
+
 
     if (e(!ppWindow, "Potiner to Window* was null\n")) return -1;
 
@@ -195,6 +202,8 @@ int32_t Render(SDL_Window* pWindow, SDL_Renderer* pRenderer, SDL_Texture* pTextu
             for (int x = 0; x < 16; ++x){
                 for (int y = 0; y < 16; ++y){
                     if (spritePixels["Water drop-mini"][std::pair<int,int>(x,y)] != 0) pPixelBuffer[((x + selectPointX + spritePositions["Water drop-mini"].first) + (y + selectPointY + spritePositions["Water drop-mini"].second) * g_kRenderWidth)] = spritePixels["Water drop-mini"][std::pair<int,int>(x,y)];
+                    if (spritePixels["Sand-mini"][std::pair<int,int>(x,y)] != 0) pPixelBuffer[((x + selectPointX + spritePositions["Sand-mini"].first) + (y + selectPointY + spritePositions["Sand-mini"].second) * g_kRenderWidth)] = spritePixels["Sand-mini"][std::pair<int,int>(x,y)];
+                    if (spritePixels["Stone-mini"][std::pair<int,int>(x,y)] != 0) pPixelBuffer[((x + selectPointX + spritePositions["Stone-mini"].first) + (y + selectPointY + spritePositions["Stone-mini"].second) * g_kRenderWidth)] = spritePixels["Stone-mini"][std::pair<int,int>(x,y)];
                     
                 }
             }
@@ -429,6 +438,9 @@ int main()
                                             break;
                                         case 1:
                                             currentCreate = WATER;
+                                            break;
+                                        case 2:
+                                            currentCreate = WALL;
                                             break;
                                     }
                                 }
