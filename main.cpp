@@ -17,9 +17,9 @@ constexpr static const int32_t g_kErrorOccurred           = -1;
 
 constexpr static const int g_kSelectRadius                = 30;
 constexpr static const int g_kSelectPixelsPerSlice        = 63;
-constexpr static const int g_kSelectSlices                = 3;
+constexpr static const int g_kSelectSlices                = 5;
 
-constexpr static const char* g_kWindowTitle =             "PixelPusher";
+constexpr static const char* g_kWindowTitle =             "Falling Sand";
 
 int slice = 0;
 
@@ -103,7 +103,13 @@ int32_t Startup(SDL_Window** ppWindow, SDL_Renderer** ppRenderer, SDL_Texture** 
 
     addSprite("Stone-mini", "Sprites/Stone-mini.bmp", 16);
     assignSpritePositions("Stone-mini", g_kSelectSlices, 2, g_kSelectRadius);
+    
+    addSprite("Log-mini", "Sprites/Log-mini.bmp", 16);
+    assignSpritePositions("Log-mini", g_kSelectSlices, 3, g_kSelectRadius);
 
+    
+    addSprite("Fire-mini", "Sprites/Fire-mini.bmp", 16);
+    assignSpritePositions("Fire-mini", g_kSelectSlices, 4, g_kSelectRadius);
 
     if (e(!ppWindow, "Potiner to Window* was null\n")) return -1;
 
@@ -204,6 +210,8 @@ int32_t Render(SDL_Window* pWindow, SDL_Renderer* pRenderer, SDL_Texture* pTextu
                     if (spritePixels["Water drop-mini"][std::pair<int,int>(x,y)] != 0) pPixelBuffer[((x + selectPointX + spritePositions["Water drop-mini"].first) + (y + selectPointY + spritePositions["Water drop-mini"].second) * g_kRenderWidth)] = spritePixels["Water drop-mini"][std::pair<int,int>(x,y)];
                     if (spritePixels["Sand-mini"][std::pair<int,int>(x,y)] != 0) pPixelBuffer[((x + selectPointX + spritePositions["Sand-mini"].first) + (y + selectPointY + spritePositions["Sand-mini"].second) * g_kRenderWidth)] = spritePixels["Sand-mini"][std::pair<int,int>(x,y)];
                     if (spritePixels["Stone-mini"][std::pair<int,int>(x,y)] != 0) pPixelBuffer[((x + selectPointX + spritePositions["Stone-mini"].first) + (y + selectPointY + spritePositions["Stone-mini"].second) * g_kRenderWidth)] = spritePixels["Stone-mini"][std::pair<int,int>(x,y)];
+                    if (spritePixels["Log-mini"][std::pair<int,int>(x,y)] != 0) pPixelBuffer[((x + selectPointX + spritePositions["Log-mini"].first) + (y + selectPointY + spritePositions["Log-mini"].second) * g_kRenderWidth)] = spritePixels["Log-mini"][std::pair<int,int>(x,y)];
+                    if (spritePixels["Fire-mini"][std::pair<int,int>(x,y)] != 0) pPixelBuffer[((x + selectPointX + spritePositions["Fire-mini"].first) + (y + selectPointY + spritePositions["Fire-mini"].second) * g_kRenderWidth)] = spritePixels["Fire-mini"][std::pair<int,int>(x,y)];
                     
                 }
             }
@@ -230,16 +238,18 @@ class CaveGenerator{
 public:
     PARTICLETYPES * map;
     int fillPercent;
-    CaveGenerator(int _width, int _height, int _fillPercent){
+    PARTICLETYPES wallType;
+    CaveGenerator(int _width, int _height, int _fillPercent, PARTICLETYPES _wallType){
         width = _width;
         height = _height;
         fillPercent = _fillPercent;
+        wallType = _wallType;
     }
     void init(){
         map = (PARTICLETYPES *)malloc(width * height * sizeof(PARTICLETYPES));
         for (int i = 0; i < width * height; ++i){
             if (FastRand() % 100 <= fillPercent){
-                map[i] = WALL;
+                map[i] = wallType;
             }
             else{
                 map[i] = NOTHING;
@@ -256,24 +266,24 @@ public:
             
             for (int x = 0; x < width ; ++x){
                 for (int y = 0; y < height; ++y){
-                    if (x <= 1) map[x + y * width] = WALL;
-                    if (y <= 1) map[x + y * width] = WALL;
-                    if (x >= width - 2) map[x + y * width] = WALL;
-                    if (y >= height - 2) map[x + y * width] = WALL;
+                    if (x <= 1) map[x + y * width] = wallType;
+                    if (y <= 1) map[x + y * width] = wallType;
+                    if (x >= width - 2) map[x + y * width] = wallType;
+                    if (y >= height - 2) map[x + y * width] = wallType;
                     sum = getNeighbors(x , y);
-                    if (map[x + y * width] == WALL && sum < 4){
+                    if (map[x + y * width] == wallType && sum < 4){
                         newMap[x + y * width] = NOTHING;
                     }
                     else if (map[x + y * width] == NOTHING && sum >= 5){
-                        newMap[x + y * width] = WALL;
+                        newMap[x + y * width] = wallType;
                     }
                     else{
                         newMap[x + y * width] = map[x + y * width];
                     }
-                    if (x <= 1) map[x + y * width] = WALL;
-                    if (y <= 1) map[x + y * width] = WALL;
-                    if (x >= width - 2) map[x + y * width] = WALL;
-                    if (y >= height - 2) map[x + y * width] = WALL;
+                    if (x <= 1) map[x + y * width] = wallType;
+                    if (y <= 1) map[x + y * width] = wallType;
+                    if (x >= width - 2) map[x + y * width] = wallType;
+                    if (y >= height - 2) map[x + y * width] = wallType;
                     //map[x + y * width] = newMap[x + y * width];
                 }
             }
@@ -296,28 +306,28 @@ private:
 
     int getNeighbors(int x, int y) {
         int neighbors = 0;
-        if((x - 1 >= 0 && y - 1 >= 0 && map[x - 1 + (y - 1) * width] == WALL) || (x - 1 < 0 && y - 1 < 0)) {
+        if((x - 1 >= 0 && y - 1 >= 0 && map[x - 1 + (y - 1) * width] == wallType) || (x - 1 < 0 && y - 1 < 0)) {
             neighbors += 1;
         }
-        if((y - 1 >= 0 && map[x + (y - 1) * width] == WALL) || (y - 1 < 0)) {
+        if((y - 1 >= 0 && map[x + (y - 1) * width] == wallType) || (y - 1 < 0)) {
             neighbors += 1;
         }
-        if((x + 1 < width && y - 1 >= 0 && map[x + 1 + (y - 1 ) * width] == WALL) || (x + 1 >= width && y - 1 < 0)) {
+        if((x + 1 < width && y - 1 >= 0 && map[x + 1 + (y - 1 ) * width] == wallType) || (x + 1 >= width && y - 1 < 0)) {
             neighbors += 1;
         }
-        if((x - 1 >= 0 && map[x - 1 + y* width] == WALL) || (x - 1 < 0)) {
+        if((x - 1 >= 0 && map[x - 1 + y* width] == wallType) || (x - 1 < 0)) {
             neighbors += 1;
         }
-        if((x + 1 < width && map[x + 1 + y * width] == WALL) || (x + 1 >= width)) {
+        if((x + 1 < width && map[x + 1 + y * width] == wallType) || (x + 1 >= width)) {
             neighbors += 1;
         }
-        if((x - 1 >= 0 && y + 1 < height && map[x - 1 + ( y + 1 ) * width] == WALL) || (x - 1 < 0 && y + 1 >= height)) {
+        if((x - 1 >= 0 && y + 1 < height && map[x - 1 + ( y + 1 ) * width] == wallType) || (x - 1 < 0 && y + 1 >= height)) {
             neighbors += 1;
         }
-        if((y + 1 < height && map[x + (y + 1) * width] == WALL) || (y + 1 >= height)) {
+        if((y + 1 < height && map[x + (y + 1) * width] == wallType) || (y + 1 >= height)) {
             neighbors += 1;
         }
-        if((x + 1 < width && y + 1 < height && map[x + 1 + (y + 1) * width] == WALL) || (x + 1 >= width && y + 1 >= height)) {
+        if((x + 1 < width && y + 1 < height && map[x + 1 + (y + 1) * width] == wallType) || (x + 1 >= width && y + 1 >= height)) {
             neighbors += 1;
         }
         return neighbors;
@@ -335,8 +345,8 @@ int selectPointY = 0;
 int mouseX = 0;
 int mouseY = 0;
 
-CaveGenerator caveGenerator(g_kRenderWidth, g_kRenderHeight, 48);
-CaveGenerator tempCave(g_kRenderWidth, g_kRenderHeight, 48);
+CaveGenerator caveGenerator(g_kRenderWidth, g_kRenderHeight, 48, WOOD);
+CaveGenerator tempCave(g_kRenderWidth, g_kRenderHeight, 48, WALL);
 PARTICLETYPES currentCreate = SAND;
 int main()
 {
@@ -442,6 +452,12 @@ int main()
                                         case 2:
                                             currentCreate = WALL;
                                             break;
+                                        case 3:
+                                            currentCreate = WOOD;
+                                            break;
+                                        case 4:
+                                            currentCreate = FIRE;
+                                            break;
                                     }
                                 }
                                 break;
@@ -468,7 +484,7 @@ int main()
                 
             }
 
-            if (leftMouseDown && totalFramesRendered % 2 == 0 && shiftDown == false){
+            if (leftMouseDown && (totalFramesRendered % 2 == 0 || currentCreate == FIRE) && shiftDown == false){
                 addParticle(particles, mouseX, mouseY, g_kRenderWidth, pixels, colors, currentCreate);
             }
             if (rightMouseDown && totalFramesRendered % 2 == 0 && shiftDown == false){
