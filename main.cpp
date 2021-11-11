@@ -17,7 +17,9 @@ constexpr static const int32_t g_kErrorOccurred           = -1;
 
 constexpr static const int g_kSelectRadius                = 30;
 constexpr static const int g_kSelectPixelsPerSlice        = 63;
-constexpr static const int g_kSelectSlices                = 5;
+constexpr static const int g_kSelectSlices                = 6;
+//24 milliseconds every 24 frames
+constexpr static const int g_kMillisecondsPerFrame        = 5;
 
 constexpr static const char* g_kWindowTitle =             "Falling Sand";
 
@@ -110,6 +112,9 @@ int32_t Startup(SDL_Window** ppWindow, SDL_Renderer** ppRenderer, SDL_Texture** 
     
     addSprite("Fire-mini", "Sprites/Fire-mini.bmp", 16);
     assignSpritePositions("Fire-mini", g_kSelectSlices, 4, g_kSelectRadius);
+    
+    addSprite("Plant-mini", "Sprites/Plant-mini.bmp", 16);
+    assignSpritePositions("Plant-mini", g_kSelectSlices, 5, g_kSelectRadius);
 
     if (e(!ppWindow, "Potiner to Window* was null\n")) return -1;
 
@@ -205,13 +210,19 @@ int32_t Render(SDL_Window* pWindow, SDL_Renderer* pRenderer, SDL_Texture* pTextu
                     pPixelBuffer[(selectPointX + pointsOnSlice[i].first + (selectPointY + pointsOnSlice[i].second) * g_kRenderWidth)] = colors[11];
                 }
             }
+            for (uint32_t i = 0; i < pointsOnCircleSlice[0].size(); i++){
+                if (selectPointX + pointsOnCircleSlice[0][i].first >= 0 && selectPointX + pointsOnCircleSlice[0][i].first < g_kRenderWidth && selectPointY + pointsOnCircleSlice[0][i].second >= 0 && selectPointY + pointsOnCircleSlice[0][i].second < g_kRenderWidth){
+                    pPixelBuffer[(selectPointX + pointsOnCircleSlice[0][i].first + (selectPointY + pointsOnCircleSlice[0][i].second) * g_kRenderWidth)] = colors[11];
+                }
+            }
             for (int x = 0; x < 16; ++x){
                 for (int y = 0; y < 16; ++y){
-                    if (spritePixels["Water drop-mini"][std::pair<int,int>(x,y)] != 0) pPixelBuffer[((x + selectPointX + spritePositions["Water drop-mini"].first) + (y + selectPointY + spritePositions["Water drop-mini"].second) * g_kRenderWidth)] = spritePixels["Water drop-mini"][std::pair<int,int>(x,y)];
-                    if (spritePixels["Sand-mini"][std::pair<int,int>(x,y)] != 0) pPixelBuffer[((x + selectPointX + spritePositions["Sand-mini"].first) + (y + selectPointY + spritePositions["Sand-mini"].second) * g_kRenderWidth)] = spritePixels["Sand-mini"][std::pair<int,int>(x,y)];
-                    if (spritePixels["Stone-mini"][std::pair<int,int>(x,y)] != 0) pPixelBuffer[((x + selectPointX + spritePositions["Stone-mini"].first) + (y + selectPointY + spritePositions["Stone-mini"].second) * g_kRenderWidth)] = spritePixels["Stone-mini"][std::pair<int,int>(x,y)];
-                    if (spritePixels["Log-mini"][std::pair<int,int>(x,y)] != 0) pPixelBuffer[((x + selectPointX + spritePositions["Log-mini"].first) + (y + selectPointY + spritePositions["Log-mini"].second) * g_kRenderWidth)] = spritePixels["Log-mini"][std::pair<int,int>(x,y)];
-                    if (spritePixels["Fire-mini"][std::pair<int,int>(x,y)] != 0) pPixelBuffer[((x + selectPointX + spritePositions["Fire-mini"].first) + (y + selectPointY + spritePositions["Fire-mini"].second) * g_kRenderWidth)] = spritePixels["Fire-mini"][std::pair<int,int>(x,y)];
+                    if (spritePixels["Water drop-mini"][std::pair<int,int>(x,y)] != 0 && x + selectPointX + spritePositions["Water drop-mini"].first >= 0 && x + selectPointX + spritePositions["Water drop-mini"].first < g_kRenderWidth && y + selectPointY + spritePositions["Water drop-mini"].second >= 0 && y + selectPointY + spritePositions["Water drop-mini"].second < g_kRenderHeight) pPixelBuffer[((x + selectPointX + spritePositions["Water drop-mini"].first) + (y + selectPointY + spritePositions["Water drop-mini"].second) * g_kRenderWidth)] = spritePixels["Water drop-mini"][std::pair<int,int>(x,y)];
+                    if (spritePixels["Sand-mini"][std::pair<int,int>(x,y)] != 0 && x + selectPointX + spritePositions["Sand-mini"].first >= 0 && x + selectPointX + spritePositions["Sand-mini"].first < g_kRenderWidth && y + selectPointY + spritePositions["Sand-mini"].second >= 0 && y + selectPointY + spritePositions["Sand-mini"].second < g_kRenderHeight) pPixelBuffer[((x + selectPointX + spritePositions["Sand-mini"].first) + (y + selectPointY + spritePositions["Sand-mini"].second) * g_kRenderWidth)] = spritePixels["Sand-mini"][std::pair<int,int>(x,y)];
+                    if (spritePixels["Stone-mini"][std::pair<int,int>(x,y)] != 0 && x + selectPointX + spritePositions["Stone-mini"].first >= 0 && x + selectPointX + spritePositions["Stone-mini"].first < g_kRenderWidth && y + selectPointY + spritePositions["Stone-mini"].second >= 0 && y + selectPointY + spritePositions["Stone-mini"].second < g_kRenderHeight) pPixelBuffer[((x + selectPointX + spritePositions["Stone-mini"].first) + (y + selectPointY + spritePositions["Stone-mini"].second) * g_kRenderWidth)] = spritePixels["Stone-mini"][std::pair<int,int>(x,y)];
+                    if (spritePixels["Log-mini"][std::pair<int,int>(x,y)] != 0 && x + selectPointX + spritePositions["Log-mini"].first >= 0 && x + selectPointX + spritePositions["Log-mini"].first < g_kRenderWidth && y + selectPointY + spritePositions["Log-mini"].second >= 0 && y + selectPointY + spritePositions["Log-mini"].second < g_kRenderHeight) pPixelBuffer[((x + selectPointX + spritePositions["Log-mini"].first) + (y + selectPointY + spritePositions["Log-mini"].second) * g_kRenderWidth)] = spritePixels["Log-mini"][std::pair<int,int>(x,y)];
+                    if (spritePixels["Fire-mini"][std::pair<int,int>(x,y)] != 0 && x + selectPointX + spritePositions["Fire-mini"].first >= 0 && x + selectPointX + spritePositions["Fire-mini"].first < g_kRenderWidth && y + selectPointY + spritePositions["Fire-mini"].second >= 0 && y + selectPointY + spritePositions["Fire-mini"].second < g_kRenderHeight) pPixelBuffer[((x + selectPointX + spritePositions["Fire-mini"].first) + (y + selectPointY + spritePositions["Fire-mini"].second) * g_kRenderWidth)] = spritePixels["Fire-mini"][std::pair<int,int>(x,y)];
+                    if (spritePixels["Plant-mini"][std::pair<int,int>(x,y)] != 0 && x + selectPointX + spritePositions["Plant-mini"].first >= 0 && x + selectPointX + spritePositions["Plant-mini"].first < g_kRenderWidth && y + selectPointY + spritePositions["Plant-mini"].second >= 0 && y + selectPointY + spritePositions["Plant-mini"].second < g_kRenderHeight) pPixelBuffer[((x + selectPointX + spritePositions["Plant-mini"].first) + (y + selectPointY + spritePositions["Plant-mini"].second) * g_kRenderWidth)] = spritePixels["Plant-mini"][std::pair<int,int>(x,y)];
                     
                 }
             }
@@ -335,11 +346,13 @@ private:
 
 };
 
+Uint32 initial_ticks;
 uint32_t * pixels;
 PARTICLETYPES * particles;
 bool leftMouseDown = false;
 bool rightMouseDown = false;
 bool shiftDown = false;
+bool updated = false;
 int selectPointX = 0;
 int selectPointY = 0;
 int mouseX = 0;
@@ -353,9 +366,10 @@ int main()
 
     pixels = (uint32_t *)malloc(sizeof(uint32_t) * g_kRenderWidth * g_kRenderHeight);
     particles = (PARTICLETYPES *)malloc(sizeof(PARTICLETYPES) * g_kRenderWidth * g_kRenderHeight);
+    initUI(g_kSelectSlices);
     getPointsInsideCircle(g_kSelectRadius);
     getPointsOnCircle(g_kSelectRadius, g_kSelectPixelsPerSlice * g_kSelectSlices);
-    
+    getPointsOnCircleSlice(g_kSelectRadius * 2, 2 * M_PI * g_kSelectRadius, 0);
     SDL_Window* pWindow = nullptr;
     SDL_Renderer* pRenderer = nullptr;
     SDL_Texture* pTexture = nullptr;
@@ -380,126 +394,142 @@ int main()
         //pixels[i] = colors[1];
     }
     SDL_GL_SetSwapInterval(1);
+    initial_ticks = SDL_GetTicks();
     while (running)
     {
         if (!firstFrame)
         {
-            
-            std::thread particleThread(particleUpdate, particles, g_kRenderWidth, g_kRenderHeight, pixels, colors);
-            //particleUpdate(particles, g_kRenderWidth, g_kRenderHeight, pixels, colors);
-            std::thread renderThread(e, Render(pWindow, pRenderer, pTexture, pixels, mouseX, mouseY, selectPointX, selectPointY, colors, shiftDown), "Render failed\n");
-
-            SDL_Event event;
-            while (SDL_PollEvent(&event))
-            {
+            if (!updated){
                 
-                    if (event.type == SDL_MOUSEMOTION){
-                        mouseX = floor(event.button.x / (g_kWindowWidth / g_kRenderWidth));
-                        mouseY = floor(event.button.y / (g_kWindowHeight / g_kRenderHeight));
-                        
-                    }
-                    if (event.type == SDL_QUIT){
-                        running = false;
-                    }
-                    if (event.type == SDL_KEYDOWN){
-                        switch(event.key.keysym.sym){
-                            default:
-                                break;
-                            case SDLK_ESCAPE:
-                                running = false;
-                                break;
+                updated = true;
+                particleUpdate(particles, g_kRenderWidth, g_kRenderHeight, pixels, colors);
+            }
+            if (SDL_GetTicks() - initial_ticks > g_kMillisecondsPerFrame){
+                
+                //particleUpdate(particles, g_kRenderWidth, g_kRenderHeight, pixels, colors);
+                std::thread renderThread(e, Render(pWindow, pRenderer, pTexture, pixels, mouseX, mouseY, selectPointX, selectPointY, colors, shiftDown), "Render failed\n");
+
+                SDL_Event event;
+                while (SDL_PollEvent(&event))
+                {
+                    
+                        if (event.type == SDL_MOUSEMOTION){
+                            mouseX = floor(event.button.x / (g_kWindowWidth / g_kRenderWidth));
+                            mouseY = floor(event.button.y / (g_kWindowHeight / g_kRenderHeight));
                             
-                            case SDLK_SPACE:
-                                tempCave.init();
-                                tempCave.step(50);
-                                particles = tempCave.getMap();
-                                for (int i = 0; i < g_kRenderWidth * g_kRenderHeight;i++){
-                                    pixels[i] = allProperties[particles[i]].pixelColors[FastRand()%3];
-                                    //pixels[i] = colors[1];
-                                } 
-                                break;
-                            case SDLK_LSHIFT:
-                                shiftDown = true;
+                        }
+                        if (event.type == SDL_QUIT){
+                            running = false;
+                        }
+                        if (event.type == SDL_KEYDOWN){
+                            switch(event.key.keysym.sym){
+                                default:
+                                    break;
+                                case SDLK_ESCAPE:
+                                    running = false;
+                                    break;
                                 
-                                break;
+                                case SDLK_SPACE:
+                                    tempCave.init();
+                                    tempCave.step(50);
+                                    particles = tempCave.getMap();
+                                    for (int i = 0; i < g_kRenderWidth * g_kRenderHeight;i++){
+                                        pixels[i] = allProperties[particles[i]].pixelColors[FastRand()%3];
+                                        //pixels[i] = colors[1];
+                                    } 
+                                    break;
+                                case SDLK_LSHIFT:
+                                    shiftDown = true;
+                                    
+                                    break;
+                            }
                         }
-                    }
-                    if (event.type == SDL_KEYUP){
-                        switch(event.key.keysym.sym){
-                            default:
-                                break;
-                            case SDLK_LSHIFT:
-                                shiftDown = false;
-                                break;
+                        if (event.type == SDL_KEYUP){
+                            switch(event.key.keysym.sym){
+                                default:
+                                    break;
+                                case SDLK_LSHIFT:
+                                    shiftDown = false;
+                                    break;
+                            }
                         }
-                    }
-                    if (event.type == SDL_MOUSEBUTTONDOWN){
-                        switch(event.button.button){
-                            default:
-                                break;
-                            case SDL_BUTTON_LEFT:
-                                leftMouseDown = true;
-                                if (shiftDown){
-                                    switch (slice){
-                                        default:
-                                            break;
-                                        case 0:
-                                            currentCreate = SAND;
-                                            break;
-                                        case 1:
-                                            currentCreate = WATER;
-                                            break;
-                                        case 2:
-                                            currentCreate = WALL;
-                                            break;
-                                        case 3:
-                                            currentCreate = WOOD;
-                                            break;
-                                        case 4:
-                                            currentCreate = FIRE;
-                                            break;
+                        if (event.type == SDL_MOUSEBUTTONDOWN){
+                            switch(event.button.button){
+                                default:
+                                    break;
+                                case SDL_BUTTON_LEFT:
+                                    leftMouseDown = true;
+                                    if (shiftDown){
+                                        switch (slice){
+                                            default:
+                                                break;
+                                            case 0:
+                                                currentCreate = SAND;
+                                                break;
+                                            case 1:
+                                                currentCreate = WATER;
+                                                break;
+                                            case 2:
+                                                currentCreate = WALL;
+                                                break;
+                                            case 3:
+                                                currentCreate = WOOD;
+                                                break;
+                                            case 4:
+                                                currentCreate = FIRE;
+                                                break;
+                                            case 5:
+                                                currentCreate = PLANT;
+                                                break;
+                                        }
                                     }
-                                }
-                                break;
-                            case SDL_BUTTON_RIGHT:
-                                rightMouseDown = true;
-                                break;
+                                    break;
+                                case SDL_BUTTON_RIGHT:
+                                    rightMouseDown = true;
+                                    break;
+                            }
                         }
-                    }
-                        
-                    if (event.type == SDL_MOUSEBUTTONUP){
-                        switch (event.button.button){
-                            default:
-                                break;
-                            case SDL_BUTTON_LEFT:
-                                leftMouseDown = false;
-                                break;
-                            case SDL_BUTTON_RIGHT:
-                                rightMouseDown = false;
-                                break;
+                            
+                        if (event.type == SDL_MOUSEBUTTONUP){
+                            switch (event.button.button){
+                                default:
+                                    break;
+                                case SDL_BUTTON_LEFT:
+                                    leftMouseDown = false;
+                                    break;
+                                case SDL_BUTTON_RIGHT:
+                                    rightMouseDown = false;
+                                    break;
+                            }
                         }
-                    }
-                        
+                            
 
+                    
+                }
+
+                if (leftMouseDown && (totalFramesRendered % 2 == 0 || currentCreate == FIRE || currentCreate == WATER) && shiftDown == false){
+                    addParticle(particles, mouseX, mouseY, g_kRenderWidth, pixels, colors, currentCreate);
+                }
+                if (rightMouseDown && totalFramesRendered % 2 == 0 && shiftDown == false){
+                    removeParticle(particles, mouseX, mouseY, g_kRenderWidth, pixels, colors);
+                }
+                if (shiftDown == false){
+                    selectPointX = mouseX;
+                    selectPointY = mouseY;
+                }
+                renderThread.join();
                 
+                updated = false;
+                initial_ticks = SDL_GetTicks();
+
+                    
+                uint64_t currentTick = SDL_GetPerformanceCounter();
+                totalTicks += currentTick - lastTick;
+                lastTick = currentTick;
+                ++totalFramesRendered;            
             }
 
-            if (leftMouseDown && (totalFramesRendered % 2 == 0 || currentCreate == FIRE) && shiftDown == false){
-                addParticle(particles, mouseX, mouseY, g_kRenderWidth, pixels, colors, currentCreate);
-            }
-            if (rightMouseDown && totalFramesRendered % 2 == 0 && shiftDown == false){
-                removeParticle(particles, mouseX, mouseY, g_kRenderWidth, pixels, colors);
-            }
-            if (shiftDown == false){
-                selectPointX = mouseX;
-                selectPointY = mouseY;
-            }
-            uint64_t currentTick = SDL_GetPerformanceCounter();
-            totalTicks += currentTick - lastTick;
-            lastTick = currentTick;
-            ++totalFramesRendered;
-            particleThread.join();
-            renderThread.join();
+            
         }
         else
         {

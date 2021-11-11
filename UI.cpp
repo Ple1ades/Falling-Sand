@@ -8,15 +8,26 @@ namespace UI{
     std::vector<std::pair<int,int>> pointsOnCircle;
     std::vector<std::pair<int,int>> pointsInCircle;
     std::vector<std::pair<int,int>> pointsOnSlice;
+    std::vector<std::pair<int,int>> *pointsOnCircleSlice;
     int UIPoints;
+    void initUI(int slices){
+        pointsOnCircleSlice = (std::vector<std::pair<int,int>> *)malloc(sizeof(std::vector<std::pair<int,int>>) * slices);
+    }
     
     void getPointsOnCircle(int r, int totalPoints){
         double theta = ((M_PI * 2)/totalPoints);
         for (int i = 0; i < totalPoints; i ++){
             double angle = (theta * i);
-
             pointsOnCircle.push_back(std::pair<int,int>(std::round(r * std::cos(angle)),std::round(r*std::sin(angle))));
-            pointsInCircle.push_back(std::pair<int,int>(std::round(r * std::cos(angle))-1,std::round(r*std::sin(angle))-1));
+            //pointsInCircle.push_back(std::pair<int,int>(std::round(r * std::cos(angle))-1,std::round(r*std::sin(angle))-1));
+        }
+    }
+
+    void getPointsOnCircleSlice(int r, int totalPoints, int sliceNum){
+        double theta = ((M_PI * 2)/totalPoints);
+        for (int i = sliceNum * totalPoints; i < (sliceNum + 1) * totalPoints; ++i){
+            double angle = (theta) * i;
+            pointsOnCircleSlice[sliceNum].push_back(std::pair<int,int>(std::round(r * std::cos(angle)),std::round(r * std::sin(angle))));
         }
     }
     
