@@ -210,11 +210,11 @@ int32_t Render(SDL_Window* pWindow, SDL_Renderer* pRenderer, SDL_Texture* pTextu
                     pPixelBuffer[(selectPointX + pointsOnSlice[i].first + (selectPointY + pointsOnSlice[i].second) * g_kRenderWidth)] = colors[11];
                 }
             }
-            for (uint32_t i = 0; i < pointsOnCircleSlice[0].size(); i++){
-                if (selectPointX + pointsOnCircleSlice[0][i].first >= 0 && selectPointX + pointsOnCircleSlice[0][i].first < g_kRenderWidth && selectPointY + pointsOnCircleSlice[0][i].second >= 0 && selectPointY + pointsOnCircleSlice[0][i].second < g_kRenderWidth){
-                    pPixelBuffer[(selectPointX + pointsOnCircleSlice[0][i].first + (selectPointY + pointsOnCircleSlice[0][i].second) * g_kRenderWidth)] = colors[11];
-                }
-            }
+            // for (uint32_t i = 0; i < pointsOnCircleSlice[0].size(); i++){
+            //     if (selectPointX + pointsOnCircleSlice[0][i].first >= 0 && selectPointX + pointsOnCircleSlice[0][i].first < g_kRenderWidth && selectPointY + pointsOnCircleSlice[0][i].second >= 0 && selectPointY + pointsOnCircleSlice[0][i].second < g_kRenderWidth){
+            //         pPixelBuffer[(selectPointX + pointsOnCircleSlice[0][i].first + (selectPointY + pointsOnCircleSlice[0][i].second) * g_kRenderWidth)] = colors[11];
+            //     }
+            // }
             for (int x = 0; x < 16; ++x){
                 for (int y = 0; y < 16; ++y){
                     if (spritePixels["Water drop-mini"][std::pair<int,int>(x,y)] != 0 && x + selectPointX + spritePositions["Water drop-mini"].first >= 0 && x + selectPointX + spritePositions["Water drop-mini"].first < g_kRenderWidth && y + selectPointY + spritePositions["Water drop-mini"].second >= 0 && y + selectPointY + spritePositions["Water drop-mini"].second < g_kRenderHeight) pPixelBuffer[((x + selectPointX + spritePositions["Water drop-mini"].first) + (y + selectPointY + spritePositions["Water drop-mini"].second) * g_kRenderWidth)] = spritePixels["Water drop-mini"][std::pair<int,int>(x,y)];
@@ -366,10 +366,10 @@ int main()
 
     pixels = (uint32_t *)malloc(sizeof(uint32_t) * g_kRenderWidth * g_kRenderHeight);
     particles = (PARTICLETYPES *)malloc(sizeof(PARTICLETYPES) * g_kRenderWidth * g_kRenderHeight);
-    initUI(g_kSelectSlices);
+    //initUI(g_kSelectSlices);
     getPointsInsideCircle(g_kSelectRadius);
     getPointsOnCircle(g_kSelectRadius, g_kSelectPixelsPerSlice * g_kSelectSlices);
-    getPointsOnCircleSlice(g_kSelectRadius * 2, 2 * M_PI * g_kSelectRadius, 0);
+    //getPointsOnCircleSlice(g_kSelectRadius * 2, 2 * M_PI * g_kSelectRadius, 0);
     SDL_Window* pWindow = nullptr;
     SDL_Renderer* pRenderer = nullptr;
     SDL_Texture* pTexture = nullptr;
@@ -526,9 +526,9 @@ int main()
                 uint64_t currentTick = SDL_GetPerformanceCounter();
                 totalTicks += currentTick - lastTick;
                 lastTick = currentTick;
-                ++totalFramesRendered;            
+                ++totalFramesRendered;        
             }
-
+              
             
         }
         else
