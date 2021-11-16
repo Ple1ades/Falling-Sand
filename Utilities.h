@@ -8,8 +8,31 @@
 #include <utility>
 #include <map>
 
-
 # define M_PI           3.14159265358979323846
+
+// Render
+constexpr static const int32_t g_kWindowWidth             = 1920;
+constexpr static const int32_t g_kWindowHeight            = 1080;
+constexpr static const int32_t g_kRenderWidth             = g_kWindowWidth / 3;
+constexpr static const int32_t g_kRenderHeight            = g_kWindowHeight / 3;
+constexpr static const int32_t g_kRenderDeviceFlags       = -1;
+constexpr static const int32_t g_kErrorOccurred           = -1;
+constexpr static const char* g_kWindowTitle =             "Falling Sand";
+constexpr static const int g_kMillisecondsPerFrame        = 5;
+
+// Pixels
+constexpr static const int g_kSelectRadius                = 30;
+constexpr static const int g_kSelectPixelsPerSlice        = 63;
+constexpr static const int g_kSelectSlices                = 6;
+
+// Fluid
+constexpr static const int diffusionK                     = 5;
+
+
+
+
+
+
 
 int32_t e(int32_t result, std::string errorMessage)
 {
