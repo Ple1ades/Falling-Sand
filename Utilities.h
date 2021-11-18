@@ -8,7 +8,9 @@
 #include <utility>
 #include <map>
 
-# define M_PI           3.14159265358979323846
+#ifndef M_PI
+#define M_PI           3.14159265358979323846
+#endif
 
 // Render
 constexpr static const int32_t g_kWindowWidth             = 1920;
