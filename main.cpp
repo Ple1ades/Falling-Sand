@@ -315,7 +315,7 @@ PARTICLETYPES currentCreate = SAND;
 
 
 
-bool diffusionMap = false;
+bool diffusionMap = true;
 int main()
 {
 
@@ -536,7 +536,7 @@ int main()
                     }
                     for (int x = 0; x < g_kRenderWidth; ++x){
                         for (int y = 0; y < g_kRenderHeight; ++y){
-                            if (x == 0 || x == g_kRenderWidth - 1 || y == 0 || y == g_kRenderHeight - 1) fluid[x + y * g_kRenderWidth].diffusion = std::min(fluid[x + y * g_kRenderWidth].diffusion + 1, 100.0);
+                            if (x == 0 || x == g_kRenderWidth - 1 || y == 0 || y == g_kRenderHeight - 1 || fluid[x + y * g_kRenderWidth].diffusion > 75) fluid[x + y * g_kRenderWidth].diffusion = std::min(fluid[x + y * g_kRenderWidth].diffusion + 1, 100.0);
                             fluid[x + y * g_kRenderWidth].diffusion = FLUID::calculateDiffusion(x, y, g_kRenderWidth, g_kRenderHeight, fluid, diffusionK);
                             pixelR = ( *(RGB *)&colors[1]).r * (float)(fluid[x + y * g_kRenderWidth].diffusion)/100;
                             pixelG = ( *(RGB *)&colors[1]).g * (float)(fluid[x + y * g_kRenderWidth].diffusion)/100;

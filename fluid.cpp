@@ -3,6 +3,7 @@
 
 struct FLUIDVALUES{
     double diffusion;
+    std::pair<double,double> velocity;
 };
 namespace FLUID{
     double calculateDiffusion(int x, int y, int width, int height, FLUIDVALUES * fluid, double k){
