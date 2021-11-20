@@ -6,3 +6,6 @@ Compile with : "make"
 
 
 Run with : "./main.exe"
+
+
+https://www.wdv.com/Aerospace/Fluids/StamFluidsforGames.pdf
