@@ -11,6 +11,7 @@
 #ifndef M_PI
 #define M_PI           3.14159265358979323846
 #endif
+#define SWAPFLUID(x0, x) {FLUIDVALUES * tmp = x0; x0 = x; x = tmp;}
 
 // Render
 constexpr static const int32_t g_kWindowWidth             = 1920;

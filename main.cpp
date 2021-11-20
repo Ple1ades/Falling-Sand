@@ -308,7 +308,9 @@ int selectPointX = 0;
 int selectPointY = 0;
 int mouseX = 0;
 int mouseY = 0;
-
+int prevMouseX = 0;
+int prevMouseY = 0;
+double magnitude;
 CaveGenerator caveGenerator(g_kRenderWidth, g_kRenderHeight, 48, WOOD);
 CaveGenerator tempCave(g_kRenderWidth, g_kRenderHeight, 48, WALL);
 PARTICLETYPES currentCreate = SAND;
@@ -526,24 +528,37 @@ int main()
             }
             else{
                 if (!updated){
+                                
                     if (mouseDown){
-                        fluid[mouseX + mouseY * g_kRenderWidth].diffusion = 1;
-                        pixelR = ( *(RGB *)&colors[1]).r * (float)(fluid[mouseX + mouseY * g_kRenderWidth].diffusion)/100;
-                        pixelG = ( *(RGB *)&colors[1]).g * (float)(fluid[mouseX + mouseY * g_kRenderWidth].diffusion)/100;
-                        pixelB = ( *(RGB *)&colors[1]).b * (float)(fluid[mouseX + mouseY * g_kRenderWidth].diffusion)/100;
-                        pixelAlpha = ( *(RGB *)&colors[1]).alpha * (float)(fluid[mouseX + mouseY * g_kRenderWidth].diffusion)/100;
-                        renderPixels[mouseX + mouseY * g_kRenderWidth] = ARGB(pixelR, pixelG, pixelB, pixelAlpha);
+                        magnitude = std::sqrt((mouseX - prevMouseX) * (mouseX - prevMouseX) + (mouseY - prevMouseY) * (mouseY - prevMouseY));
+                        magnitude = 1;
+                        for (int i = 0; i < getPoints(std::pair<int,int>(mouseX, mouseY), std::pair<int,int>(prevMouseX, prevMouseY), std::sqrt((mouseX - prevMouseX) * (mouseX - prevMouseX) + (mouseY - prevMouseY) * (mouseY - prevMouseY))).size();++i){
+                            fluid[getPoints(std::pair<int,int>(mouseX, mouseY), std::pair<int,int>(prevMouseX, prevMouseY), std::sqrt((mouseX - prevMouseX) * (mouseX - prevMouseX) + (mouseY - prevMouseY) * (mouseY - prevMouseY)))[i].first + getPoints(std::pair<int,int>(mouseX, mouseY), std::pair<int,int>(prevMouseX, prevMouseY), std::sqrt((mouseX - prevMouseX) * (mouseX - prevMouseX) + (mouseY - prevMouseY) * (mouseY - prevMouseY)))[i].second * g_kRenderWidth].velocity = std::pair<double,double>((mouseX - prevMouseX) * 1 / std::max(1.0,magnitude), (mouseY - prevMouseY) * 1 / std::max(1.0,magnitude));
+                        }
+                        fluid[mouseX + mouseY * g_kRenderWidth].diffusion = 0;
                     }
+                    
+                    prevMouseX = mouseX;
+                    prevMouseY = mouseY;
                     for (int x = 0; x < g_kRenderWidth; ++x){
                         for (int y = 0; y < g_kRenderHeight; ++y){
-                            if (x == 0 || x == g_kRenderWidth - 1 || y == 0 || y == g_kRenderHeight - 1 || fluid[x + y * g_kRenderWidth].diffusion > 75) fluid[x + y * g_kRenderWidth].diffusion = std::min(fluid[x + y * g_kRenderWidth].diffusion + 1, 100.0);
-                            fluid[x + y * g_kRenderWidth].diffusion = FLUID::calculateDiffusion(x, y, g_kRenderWidth, g_kRenderHeight, fluid, diffusionK);
+                            fluid[x + y * g_kRenderWidth].diffusion = FLUID::calculateDiffusionDensity(x, y, g_kRenderWidth, g_kRenderHeight, fluid, diffusionK);
+                            fluid[x + y * g_kRenderWidth].velocity = FLUID::calculateDiffusionVelocity(x, y, g_kRenderWidth, g_kRenderHeight, fluid, diffusionK);
+                            
+                        }
+                    }
+                    *fluid = *FLUID::calculateVelocity(g_kRenderWidth, g_kRenderHeight, fluid);
+                    for (int x = 0; x < g_kRenderWidth; ++x){
+                        for (int y = 0; y < g_kRenderHeight; ++y){
+                            
+                    
                             pixelR = ( *(RGB *)&colors[1]).r * (float)(fluid[x + y * g_kRenderWidth].diffusion)/100;
                             pixelG = ( *(RGB *)&colors[1]).g * (float)(fluid[x + y * g_kRenderWidth].diffusion)/100;
                             pixelB = ( *(RGB *)&colors[1]).b * (float)(fluid[x + y * g_kRenderWidth].diffusion)/100;
                             pixelAlpha = ( *(RGB *)&colors[1]).alpha * (float)(fluid[x + y * g_kRenderWidth].diffusion)/100;
 
                             renderPixels[x + y * g_kRenderWidth] = ARGB(pixelR, pixelG, pixelB, pixelAlpha);
+                        
                         }
                     }
                     updated = true;
@@ -592,12 +607,19 @@ int main()
                 for (uint32_t i = 0; i < g_kRenderWidth * g_kRenderHeight;i++){
                     double num = FastRand()%100;
                     fluid[i].diffusion = num;
+                    fluid[i].velocity = std::pair<double,double>(1,0);
                     pixelR = ( *(RGB *)&colors[1]).r * (float)(fluid[i].diffusion)/100;
                     pixelG = ( *(RGB *)&colors[1]).g * (float)(fluid[i].diffusion)/100;
                     pixelB = ( *(RGB *)&colors[1]).b * (float)(fluid[i].diffusion)/100;
                     pixelAlpha = ( *(RGB *)&colors[1]).alpha * (float)(fluid[i].diffusion)/100;
                     renderPixels[i] = ARGB(pixelR, pixelG, pixelB, pixelAlpha);
                     
+                }
+            }
+            for (int x = 0; x < g_kRenderWidth; ++x){
+                for (int y = 0;y < g_kRenderHeight; ++y){
+                    if (x == 0 || x == g_kRenderWidth - 1 || y == 0 || y == g_kRenderHeight - 1) fluid[x + y * g_kRenderWidth].diffusion = 100;
+                            
                 }
             }
             uint64_t currentTick = SDL_GetPerformanceCounter();
