@@ -1,0 +1,35 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "shell",
+			"label": "SDL2",
+			"command": "g++",
+			"args": [
+				"-g",
+				"main.cpp",
+				"-o",
+				"build\\main",
+				"-Isrc/Include ",
+				"-Lsrc/lib/x64",
+				"-lmingw32",
+				"-lSDL2main",
+				"-lSDL2",
+                "-static-libgcc",
+                "-static-libstdc++",
+                "-std=c++17",
+				"-mwindows"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		}
+	]
+}

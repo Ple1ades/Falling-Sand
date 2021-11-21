@@ -1,4 +1,4 @@
-#include "./src/include/SDL.h"
+#include "src/include/SDL.h"
 
 #undef main
 
@@ -283,6 +283,54 @@ private:
 
 };
 
+void SetUI(bool shiftDown, int UIPoints, int selectPointX, int selectPointY, uint32_t * renderPixels, int * slice, int mouseX, int mouseY){
+    int pixelR;
+    int pixelG;
+    int pixelB;
+    int pixelAlpha;
+    int layerR;
+    int layerG;
+    int layerB;
+    int layerAlpha;
+    if (shiftDown){                        
+        for (uint32_t i = 0; i < UIPoints; ++i){
+            //std::cout<< mouseY + pointsInCircle[i].second <<std::endl;
+            if (selectPointX + pointsInCircle[i].first >= 0 && selectPointX + pointsInCircle[i].first < g_kRenderWidth && selectPointY + pointsInCircle[i].second >= 0 && selectPointY + pointsInCircle[i].second < g_kRenderHeight){
+                pixelR = ( *(RGB *)&renderPixels[(selectPointX + pointsInCircle[i].first) + (selectPointY + pointsInCircle[i].second) * g_kRenderWidth]).r * 0.5;
+                pixelG = ( *(RGB *)&renderPixels[(selectPointX + pointsInCircle[i].first) + (selectPointY + pointsInCircle[i].second) * g_kRenderWidth]).g * 0.5;
+                pixelB = ( *(RGB *)&renderPixels[(selectPointX + pointsInCircle[i].first) + (selectPointY + pointsInCircle[i].second) * g_kRenderWidth]).b * 0.5;
+                pixelAlpha = ( *(RGB *)&renderPixels[(selectPointX + pointsInCircle[i].first) + (selectPointY + pointsInCircle[i].second) * g_kRenderWidth]).alpha * 0.5;
+                layerR = ( *(RGB *)&colors[0]).r * (1 - 0.5);
+                layerG = ( *(RGB *)&colors[0]).g * (1 - 0.5);
+                layerB = ( *(RGB *)&colors[0]).b * (1 - 0.5);
+                layerAlpha = ( *(RGB *)&colors[0]).alpha * (1 - 0.5);
+                renderPixels[(selectPointX + pointsInCircle[i].first) + (selectPointY + pointsInCircle[i].second) * g_kRenderWidth] = (ARGB(pixelR + layerR, pixelG + layerG, pixelB + layerB, pixelAlpha + layerAlpha));
+            }
+        }
+        for (uint32_t i = 0; i < g_kSelectPixelsPerSlice * g_kSelectSlices; ++i){
+            if (selectPointX + pointsOnCircle[i].first >= 0 && selectPointX + pointsOnCircle[i].first < g_kRenderWidth  && selectPointY + pointsOnCircle[i].second >= 0 && selectPointY + pointsOnCircle[i].second < g_kRenderHeight) renderPixels[(selectPointX + pointsOnCircle[i].first) + (selectPointY + pointsOnCircle[i].second) * g_kRenderWidth] = colors[11];
+        }
+        *slice = getSlice(std::pair<int,int>(mouseX - selectPointX, mouseY - selectPointY), g_kSelectSlices, g_kSelectRadius);
+        for (uint32_t i = 0; i < pointsOnSlice.size(); i++){
+            if (selectPointX + pointsOnSlice[i].first >= 0 && selectPointX + pointsOnSlice[i].first < g_kRenderWidth && selectPointY + pointsOnSlice[i].second >= 0 && selectPointY + pointsOnSlice[i].second < g_kRenderWidth){
+                renderPixels[(selectPointX + pointsOnSlice[i].first + (selectPointY + pointsOnSlice[i].second) * g_kRenderWidth)] = colors[11];
+            }
+        }
+        for (int x = 0; x < 16; ++x){
+            for (int y = 0; y < 16; ++y){
+                if (spritePixels["Water drop-mini"][std::pair<int,int>(x,y)] != 0 && x + selectPointX + spritePositions["Water drop-mini"].first >= 0 && x + selectPointX + spritePositions["Water drop-mini"].first < g_kRenderWidth && y + selectPointY + spritePositions["Water drop-mini"].second >= 0 && y + selectPointY + spritePositions["Water drop-mini"].second < g_kRenderHeight) renderPixels[((x + selectPointX + spritePositions["Water drop-mini"].first) + (y + selectPointY + spritePositions["Water drop-mini"].second) * g_kRenderWidth)] = spritePixels["Water drop-mini"][std::pair<int,int>(x,y)];
+                if (spritePixels["Sand-mini"][std::pair<int,int>(x,y)] != 0 && x + selectPointX + spritePositions["Sand-mini"].first >= 0 && x + selectPointX + spritePositions["Sand-mini"].first < g_kRenderWidth && y + selectPointY + spritePositions["Sand-mini"].second >= 0 && y + selectPointY + spritePositions["Sand-mini"].second < g_kRenderHeight) renderPixels[((x + selectPointX + spritePositions["Sand-mini"].first) + (y + selectPointY + spritePositions["Sand-mini"].second) * g_kRenderWidth)] = spritePixels["Sand-mini"][std::pair<int,int>(x,y)];
+                if (spritePixels["Stone-mini"][std::pair<int,int>(x,y)] != 0 && x + selectPointX + spritePositions["Stone-mini"].first >= 0 && x + selectPointX + spritePositions["Stone-mini"].first < g_kRenderWidth && y + selectPointY + spritePositions["Stone-mini"].second >= 0 && y + selectPointY + spritePositions["Stone-mini"].second < g_kRenderHeight) renderPixels[((x + selectPointX + spritePositions["Stone-mini"].first) + (y + selectPointY + spritePositions["Stone-mini"].second) * g_kRenderWidth)] = spritePixels["Stone-mini"][std::pair<int,int>(x,y)];
+                if (spritePixels["Log-mini"][std::pair<int,int>(x,y)] != 0 && x + selectPointX + spritePositions["Log-mini"].first >= 0 && x + selectPointX + spritePositions["Log-mini"].first < g_kRenderWidth && y + selectPointY + spritePositions["Log-mini"].second >= 0 && y + selectPointY + spritePositions["Log-mini"].second < g_kRenderHeight) renderPixels[((x + selectPointX + spritePositions["Log-mini"].first) + (y + selectPointY + spritePositions["Log-mini"].second) * g_kRenderWidth)] = spritePixels["Log-mini"][std::pair<int,int>(x,y)];
+                if (spritePixels["Fire-mini"][std::pair<int,int>(x,y)] != 0 && x + selectPointX + spritePositions["Fire-mini"].first >= 0 && x + selectPointX + spritePositions["Fire-mini"].first < g_kRenderWidth && y + selectPointY + spritePositions["Fire-mini"].second >= 0 && y + selectPointY + spritePositions["Fire-mini"].second < g_kRenderHeight) renderPixels[((x + selectPointX + spritePositions["Fire-mini"].first) + (y + selectPointY + spritePositions["Fire-mini"].second) * g_kRenderWidth)] = spritePixels["Fire-mini"][std::pair<int,int>(x,y)];
+                if (spritePixels["Plant-mini"][std::pair<int,int>(x,y)] != 0 && x + selectPointX + spritePositions["Plant-mini"].first >= 0 && x + selectPointX + spritePositions["Plant-mini"].first < g_kRenderWidth && y + selectPointY + spritePositions["Plant-mini"].second >= 0 && y + selectPointY + spritePositions["Plant-mini"].second < g_kRenderHeight) renderPixels[((x + selectPointX + spritePositions["Plant-mini"].first) + (y + selectPointY + spritePositions["Plant-mini"].second) * g_kRenderWidth)] = spritePixels["Plant-mini"][std::pair<int,int>(x,y)];
+                
+            }
+        }
+    }
+
+}
+
 Uint32 initial_ticks;
 uint32_t * pixels;
 uint32_t * renderPixels;
@@ -326,7 +374,7 @@ double diff = 0.000001;
 double dt = 0.2;
 
 
-bool diffusionMap = true;
+bool diffusionMap = false;
 int main()
 {
     Vx = (double *)malloc(sizeof(double) * g_kRenderWidth * g_kRenderHeight);
@@ -384,46 +432,7 @@ int main()
                     //particleUpdate(particles, g_kRenderWidth, g_kRenderHeight, pixels, colors);
                     for (uint32_t i = 0; i < g_kRenderWidth * g_kRenderHeight; ++i)
                         renderPixels[i] = pixels[i];
-                    
-                    if (shiftDown){
-                        
-                        for (uint32_t i = 0; i < UIPoints; ++i){
-                            //std::cout<< mouseY + pointsInCircle[i].second <<std::endl;
-                            if (selectPointX + pointsInCircle[i].first >= 0 && selectPointX + pointsInCircle[i].first < g_kRenderWidth && selectPointY + pointsInCircle[i].second >= 0 && selectPointY + pointsInCircle[i].second < g_kRenderHeight){
-                                pixelR = ( *(RGB *)&renderPixels[(selectPointX + pointsInCircle[i].first) + (selectPointY + pointsInCircle[i].second) * g_kRenderWidth]).r * 0.5;
-                                pixelG = ( *(RGB *)&renderPixels[(selectPointX + pointsInCircle[i].first) + (selectPointY + pointsInCircle[i].second) * g_kRenderWidth]).g * 0.5;
-                                pixelB = ( *(RGB *)&renderPixels[(selectPointX + pointsInCircle[i].first) + (selectPointY + pointsInCircle[i].second) * g_kRenderWidth]).b * 0.5;
-                                pixelAlpha = ( *(RGB *)&renderPixels[(selectPointX + pointsInCircle[i].first) + (selectPointY + pointsInCircle[i].second) * g_kRenderWidth]).alpha * 0.5;
-                                layerR = ( *(RGB *)&colors[0]).r * (1 - 0.5);
-                                layerG = ( *(RGB *)&colors[0]).g * (1 - 0.5);
-                                layerB = ( *(RGB *)&colors[0]).b * (1 - 0.5);
-                                layerAlpha = ( *(RGB *)&colors[0]).alpha * (1 - 0.5);
-                                renderPixels[(selectPointX + pointsInCircle[i].first) + (selectPointY + pointsInCircle[i].second) * g_kRenderWidth] = (ARGB(pixelR + layerR, pixelG + layerG, pixelB + layerB, pixelAlpha + layerAlpha));
-                            }
-                        }
-                        for (uint32_t i = 0; i < g_kSelectPixelsPerSlice * g_kSelectSlices; ++i){
-                            if (selectPointX + pointsOnCircle[i].first >= 0 && selectPointX + pointsOnCircle[i].first < g_kRenderWidth  && selectPointY + pointsOnCircle[i].second >= 0 && selectPointY + pointsOnCircle[i].second < g_kRenderHeight) renderPixels[(selectPointX + pointsOnCircle[i].first) + (selectPointY + pointsOnCircle[i].second) * g_kRenderWidth] = colors[11];
-                        }
-                        slice = getSlice(std::pair<int,int>(mouseX - selectPointX, mouseY - selectPointY), g_kSelectSlices, g_kSelectRadius);
-                        for (uint32_t i = 0; i < pointsOnSlice.size(); i++){
-                            if (selectPointX + pointsOnSlice[i].first >= 0 && selectPointX + pointsOnSlice[i].first < g_kRenderWidth && selectPointY + pointsOnSlice[i].second >= 0 && selectPointY + pointsOnSlice[i].second < g_kRenderWidth){
-                                renderPixels[(selectPointX + pointsOnSlice[i].first + (selectPointY + pointsOnSlice[i].second) * g_kRenderWidth)] = colors[11];
-                            }
-                        }
-                        for (int x = 0; x < 16; ++x){
-                            for (int y = 0; y < 16; ++y){
-                                if (spritePixels["Water drop-mini"][std::pair<int,int>(x,y)] != 0 && x + selectPointX + spritePositions["Water drop-mini"].first >= 0 && x + selectPointX + spritePositions["Water drop-mini"].first < g_kRenderWidth && y + selectPointY + spritePositions["Water drop-mini"].second >= 0 && y + selectPointY + spritePositions["Water drop-mini"].second < g_kRenderHeight) renderPixels[((x + selectPointX + spritePositions["Water drop-mini"].first) + (y + selectPointY + spritePositions["Water drop-mini"].second) * g_kRenderWidth)] = spritePixels["Water drop-mini"][std::pair<int,int>(x,y)];
-                                if (spritePixels["Sand-mini"][std::pair<int,int>(x,y)] != 0 && x + selectPointX + spritePositions["Sand-mini"].first >= 0 && x + selectPointX + spritePositions["Sand-mini"].first < g_kRenderWidth && y + selectPointY + spritePositions["Sand-mini"].second >= 0 && y + selectPointY + spritePositions["Sand-mini"].second < g_kRenderHeight) renderPixels[((x + selectPointX + spritePositions["Sand-mini"].first) + (y + selectPointY + spritePositions["Sand-mini"].second) * g_kRenderWidth)] = spritePixels["Sand-mini"][std::pair<int,int>(x,y)];
-                                if (spritePixels["Stone-mini"][std::pair<int,int>(x,y)] != 0 && x + selectPointX + spritePositions["Stone-mini"].first >= 0 && x + selectPointX + spritePositions["Stone-mini"].first < g_kRenderWidth && y + selectPointY + spritePositions["Stone-mini"].second >= 0 && y + selectPointY + spritePositions["Stone-mini"].second < g_kRenderHeight) renderPixels[((x + selectPointX + spritePositions["Stone-mini"].first) + (y + selectPointY + spritePositions["Stone-mini"].second) * g_kRenderWidth)] = spritePixels["Stone-mini"][std::pair<int,int>(x,y)];
-                                if (spritePixels["Log-mini"][std::pair<int,int>(x,y)] != 0 && x + selectPointX + spritePositions["Log-mini"].first >= 0 && x + selectPointX + spritePositions["Log-mini"].first < g_kRenderWidth && y + selectPointY + spritePositions["Log-mini"].second >= 0 && y + selectPointY + spritePositions["Log-mini"].second < g_kRenderHeight) renderPixels[((x + selectPointX + spritePositions["Log-mini"].first) + (y + selectPointY + spritePositions["Log-mini"].second) * g_kRenderWidth)] = spritePixels["Log-mini"][std::pair<int,int>(x,y)];
-                                if (spritePixels["Fire-mini"][std::pair<int,int>(x,y)] != 0 && x + selectPointX + spritePositions["Fire-mini"].first >= 0 && x + selectPointX + spritePositions["Fire-mini"].first < g_kRenderWidth && y + selectPointY + spritePositions["Fire-mini"].second >= 0 && y + selectPointY + spritePositions["Fire-mini"].second < g_kRenderHeight) renderPixels[((x + selectPointX + spritePositions["Fire-mini"].first) + (y + selectPointY + spritePositions["Fire-mini"].second) * g_kRenderWidth)] = spritePixels["Fire-mini"][std::pair<int,int>(x,y)];
-                                if (spritePixels["Plant-mini"][std::pair<int,int>(x,y)] != 0 && x + selectPointX + spritePositions["Plant-mini"].first >= 0 && x + selectPointX + spritePositions["Plant-mini"].first < g_kRenderWidth && y + selectPointY + spritePositions["Plant-mini"].second >= 0 && y + selectPointY + spritePositions["Plant-mini"].second < g_kRenderHeight) renderPixels[((x + selectPointX + spritePositions["Plant-mini"].first) + (y + selectPointY + spritePositions["Plant-mini"].second) * g_kRenderWidth)] = spritePixels["Plant-mini"][std::pair<int,int>(x,y)];
-                                
-                            }
-                        }
-                    }
-
-                    std::thread renderThread(e, Render(pWindow, pRenderer, pTexture, renderPixels), "Render failed\n");
+                    std::thread UIThread(SetUI, shiftDown, UIPoints, selectPointX, selectPointY, renderPixels, &slice, mouseX, mouseY);
                     SDL_Event event;
                     while (SDL_PollEvent(&event))
                     {
@@ -533,91 +542,98 @@ int main()
                         selectPointX = mouseX;
                         selectPointY = mouseY;
                     }
-                    renderThread.join();
+                    
+                    UIThread.join();
+                    e(Render(pWindow, pRenderer, pTexture, renderPixels), "Render failed\n");
+                    
                     updated = false;
                     initial_ticks = SDL_GetTicks();
-                }
-            
-                
-            }
-            else{
-                if (!updated){
                     int64_t currentTick = SDL_GetPerformanceCounter();
                     totalTicks += currentTick - lastTick;
                     lastTick = currentTick;
                     ++totalFramesRendered;
-                    int cx = (int)(0.5 * g_kRenderWidth);
-                    int cy = (int)(0.5 * g_kRenderHeight);
-                    double scalar = FastRand()%100/100+0.5;
-                    for (int i = -1; i <= 1; ++i){
-                        for (int j = -1; j <= 1; ++j){
-                            FLUID::addDensity(cx + i, cy + i, g_kRenderWidth, FastRand()%400 + 100, density);
-                        }
-                    }
-                    FLUID::addVelocity(cx, cy, g_kRenderWidth, 500 *(mouseX - cx), 500 * (mouseY - cy), Vx, Vy);
-                            
-                    FLUID::diffuse(1, Vx0, Vx, visc, dt, g_kRenderWidth, g_kRenderHeight);
-                    FLUID::diffuse(2, Vy0, Vy, visc, dt, g_kRenderWidth, g_kRenderHeight);
-                    FLUID::project(Vx0, Vy0, Vx, Vy, g_kRenderWidth, g_kRenderHeight);
-                    FLUID::advect(1, Vx, Vx0, Vx0, Vy0, dt, g_kRenderWidth, g_kRenderHeight);
-                    FLUID::advect(2, Vy, Vy0, Vx0, Vy0, dt, g_kRenderWidth, g_kRenderHeight);
-                    FLUID::project(Vx, Vy, Vx0, Vy0, g_kRenderWidth, g_kRenderHeight);
-                    FLUID::diffuse(0, s, density, diff, dt, g_kRenderWidth, g_kRenderHeight);
-                    FLUID::advect(0, density, s, Vx, Vy, dt, g_kRenderWidth, g_kRenderHeight);
-                    FLUID::fadeDensity(density);
-                    FLUID::fadeDensity(s);
-                    for (int i = 0;i < g_kRenderWidth * g_kRenderHeight; ++i){
-                        pixelR = std::min(255.0, s[i]);
-                        pixelG = std::min(255.0, s[i]);
-                        pixelB = std::min(255.0, s[i]);
-                        
-                        // pixelR = std::max(0.0,std::min(255.0, Vx[i] * 10));
-                        // pixelG = std::max(0.0,std::min(255.0, Vx[i] * 10));
-                        // pixelB = std::max(0.0,std::min(255.0, Vx[i] * 10));
-                        
-
-                        pixelAlpha = ( *(RGB *)&colors[1]).alpha;
-                        renderPixels[i] = ARGB(pixelR, pixelG, pixelB, pixelAlpha);
-                        
-                    }
-                    
-                    updated = true;
                 }
-                if (SDL_GetTicks() - initial_ticks > g_kMillisecondsPerFrame){
-                    updated = false;
-                    initial_ticks = SDL_GetTicks();
-                }
-                std::thread renderThread(e, Render(pWindow, pRenderer, pTexture, renderPixels), "Render failed\n");
+            
                 
-                SDL_Event event;
-                while (SDL_PollEvent(&event)){
-                    if (event.type == SDL_QUIT){
-                        running = false;
-                    }
-                    if (event.type == SDL_KEYDOWN ){
-                        switch (event.key.keysym.sym){
-                            default:
-                                break;
-                            case SDLK_ESCAPE:
-                                running = false;
-                                break;
-                        }
-                    }
-                    if (event.type == SDL_MOUSEBUTTONDOWN){
-                        mouseDown = true;
-                    }
-                    if (event.type == SDL_MOUSEBUTTONUP){
-                        mouseDown = false;
-                    }
-                    if (event.type == SDL_MOUSEMOTION){
-                        mouseX = floor(event.button.x / (g_kWindowWidth / g_kRenderWidth));
-                        mouseY = floor(event.button.y / (g_kWindowHeight / g_kRenderHeight));
-                                
-                    }
-                }
-                renderThread.join();
-
             }
+            // else{
+            //     if (!updated){
+            //         int64_t currentTick = SDL_GetPerformanceCounter();
+            //         totalTicks += currentTick - lastTick;
+            //         lastTick = currentTick;
+            //         ++totalFramesRendered;
+            //         int cx = (int)(0.5 * g_kRenderWidth);
+            //         int cy = (int)(0.5 * g_kRenderHeight);
+            //         double scalar = FastRand()%100/100+0.5;
+            //         for (int i = -1; i <= 1; ++i){
+            //             for (int j = -1; j <= 1; ++j){
+            //                 FLUID::addDensity(cx + i, cy + i, g_kRenderWidth, FastRand()%400 + 100, density);
+            //             }
+            //         }
+            //         FLUID::addVelocity(cx, cy, g_kRenderWidth, 500 *(mouseX - cx), 500 * (mouseY - cy), Vx, Vy);
+                            
+            //         FLUID::diffuse(1, Vx0, Vx, visc, dt, g_kRenderWidth, g_kRenderHeight);
+            //         FLUID::diffuse(2, Vy0, Vy, visc, dt, g_kRenderWidth, g_kRenderHeight);
+            //         FLUID::project(Vx0, Vy0, Vx, Vy, g_kRenderWidth, g_kRenderHeight);
+            //         FLUID::advect(1, Vx, Vx0, Vx0, Vy0, dt, g_kRenderWidth, g_kRenderHeight);
+            //         FLUID::advect(2, Vy, Vy0, Vx0, Vy0, dt, g_kRenderWidth, g_kRenderHeight);
+            //         FLUID::project(Vx, Vy, Vx0, Vy0, g_kRenderWidth, g_kRenderHeight);
+            //         FLUID::diffuse(0, s, density, diff, dt, g_kRenderWidth, g_kRenderHeight);
+            //         FLUID::advect(0, density, s, Vx, Vy, dt, g_kRenderWidth, g_kRenderHeight);
+            //         FLUID::fadeDensity(density);
+            //         FLUID::fadeDensity(s);
+            //         for (int i = 0;i < g_kRenderWidth * g_kRenderHeight; ++i){
+            //             pixelR = std::min(255.0, s[i]);
+            //             pixelG = std::min(255.0, s[i]);
+            //             pixelB = std::min(255.0, s[i]);
+                        
+            //             // pixelR = std::max(0.0,std::min(255.0, Vx[i] * 10));
+            //             // pixelG = std::max(0.0,std::min(255.0, Vx[i] * 10));
+            //             // pixelB = std::max(0.0,std::min(255.0, Vx[i] * 10));
+                        
+
+            //             pixelAlpha = ( *(RGB *)&colors[1]).alpha;
+            //             renderPixels[i] = ARGB(pixelR, pixelG, pixelB, pixelAlpha);
+                        
+            //         }
+                    
+            //         updated = true;
+            //     }
+            //     if (SDL_GetTicks() - initial_ticks > g_kMillisecondsPerFrame){
+            //         updated = false;
+            //         initial_ticks = SDL_GetTicks();
+            //     }
+            //     std::thread renderThread(e, Render(pWindow, pRenderer, pTexture, renderPixels), "Render failed\n");
+                
+            //     SDL_Event event;
+            //     while (SDL_PollEvent(&event)){
+            //         if (event.type == SDL_QUIT){
+            //             running = false;
+            //         }
+            //         if (event.type == SDL_KEYDOWN ){
+            //             switch (event.key.keysym.sym){
+            //                 default:
+            //                     break;
+            //                 case SDLK_ESCAPE:
+            //                     running = false;
+            //                     break;
+            //             }
+            //         }
+            //         if (event.type == SDL_MOUSEBUTTONDOWN){
+            //             mouseDown = true;
+            //         }
+            //         if (event.type == SDL_MOUSEBUTTONUP){
+            //             mouseDown = false;
+            //         }
+            //         if (event.type == SDL_MOUSEMOTION){
+            //             mouseX = floor(event.button.x / (g_kWindowWidth / g_kRenderWidth));
+            //             mouseY = floor(event.button.y / (g_kWindowHeight / g_kRenderHeight));
+                                
+            //         }
+            //     }
+            //     renderThread.join();
+
+            // }
                 
             
         }
