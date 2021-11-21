@@ -425,7 +425,11 @@ int main()
                 if (!updated){
                     
                     updated = true;
-                    particleUpdate(particles, g_kRenderWidth, g_kRenderHeight, pixels, colors);
+                    for (int x = g_kRenderWidth - 1; x >= 0; --x){
+                        for (int y = g_kRenderHeight - 1; y >= 0; --y){
+                            particleUpdate(particles, g_kRenderWidth, g_kRenderHeight, pixels, colors,x , y);
+                        }
+                    }
                 }
                 if (SDL_GetTicks() - initial_ticks > g_kMillisecondsPerFrame){
                 
