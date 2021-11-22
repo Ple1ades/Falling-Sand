@@ -283,7 +283,7 @@ private:
 
 };
 
-void SetUI(bool shiftDown, int UIPoints, int selectPointX, int selectPointY, uint32_t * renderPixels, int * slice, int mouseX, int mouseY){
+void SetUI(bool shiftDown, int UIPoints, int selectPointX, int selectPointY, uint32_t * renderPixels, int * slice, int mouseX, int mouseY, uint32_t * pixels){
     int pixelR;
     int pixelG;
     int pixelB;
@@ -296,10 +296,10 @@ void SetUI(bool shiftDown, int UIPoints, int selectPointX, int selectPointY, uin
         for (uint32_t i = 0; i < UIPoints; ++i){
             //std::cout<< mouseY + pointsInCircle[i].second <<std::endl;
             if (selectPointX + pointsInCircle[i].first >= 0 && selectPointX + pointsInCircle[i].first < g_kRenderWidth && selectPointY + pointsInCircle[i].second >= 0 && selectPointY + pointsInCircle[i].second < g_kRenderHeight){
-                pixelR = ( *(RGB *)&renderPixels[(selectPointX + pointsInCircle[i].first) + (selectPointY + pointsInCircle[i].second) * g_kRenderWidth]).r * 0.5;
-                pixelG = ( *(RGB *)&renderPixels[(selectPointX + pointsInCircle[i].first) + (selectPointY + pointsInCircle[i].second) * g_kRenderWidth]).g * 0.5;
-                pixelB = ( *(RGB *)&renderPixels[(selectPointX + pointsInCircle[i].first) + (selectPointY + pointsInCircle[i].second) * g_kRenderWidth]).b * 0.5;
-                pixelAlpha = ( *(RGB *)&renderPixels[(selectPointX + pointsInCircle[i].first) + (selectPointY + pointsInCircle[i].second) * g_kRenderWidth]).alpha * 0.5;
+                pixelR = ( *(RGB *)&pixels[(selectPointX + pointsInCircle[i].first) + (selectPointY + pointsInCircle[i].second) * g_kRenderWidth]).r * 0.5;
+                pixelG = ( *(RGB *)&pixels[(selectPointX + pointsInCircle[i].first) + (selectPointY + pointsInCircle[i].second) * g_kRenderWidth]).g * 0.5;
+                pixelB = ( *(RGB *)&pixels[(selectPointX + pointsInCircle[i].first) + (selectPointY + pointsInCircle[i].second) * g_kRenderWidth]).b * 0.5;
+                pixelAlpha = ( *(RGB *)&pixels[(selectPointX + pointsInCircle[i].first) + (selectPointY + pointsInCircle[i].second) * g_kRenderWidth]).alpha * 0.5;
                 layerR = ( *(RGB *)&colors[0]).r * (1 - 0.5);
                 layerG = ( *(RGB *)&colors[0]).g * (1 - 0.5);
                 layerB = ( *(RGB *)&colors[0]).b * (1 - 0.5);
@@ -346,6 +346,8 @@ uint32_t layerAlpha;
 
 PARTICLETYPES * particles;
 
+std::map<int,bool> dirtyChunk;
+std::map<int,bool> tempDirtyChunk;
 
 bool leftMouseDown = false;
 bool rightMouseDown = false;
@@ -356,8 +358,13 @@ int selectPointX = 0;
 int selectPointY = 0;
 int mouseX = 0;
 int mouseY = 0;
+int chunkMouseX;
+int chunkMouseY;
+int selectChunkMouseX;
+int selectChunkMouseY;
 int prevMouseX = 0;
 int prevMouseY = 0;
+
 double magnitude;
 CaveGenerator caveGenerator(g_kRenderWidth, g_kRenderHeight, 48, WOOD);
 CaveGenerator tempCave(g_kRenderWidth, g_kRenderHeight, 48, WALL);
@@ -377,16 +384,16 @@ double dt = 0.2;
 bool diffusionMap = false;
 int main()
 {
-    Vx = (double *)malloc(sizeof(double) * g_kRenderWidth * g_kRenderHeight);
-    Vy = (double *)malloc(sizeof(double) * g_kRenderWidth * g_kRenderHeight);
-    Vx0 = (double *)malloc(sizeof(double) * g_kRenderWidth * g_kRenderHeight);
-    Vy0 = (double *)malloc(sizeof(double) * g_kRenderWidth * g_kRenderHeight);
-    density = (double *)malloc(sizeof(double) * g_kRenderWidth * g_kRenderHeight);
-    s = (double *)malloc(sizeof(double) * g_kRenderWidth * g_kRenderHeight);
+    Vx = (double *)malloc(sizeof(double) * (g_kRenderWidth + 1) * (g_kRenderHeight + 1));
+    Vy = (double *)malloc(sizeof(double) * (g_kRenderWidth + 1) * (g_kRenderHeight + 1) );
+    Vx0 = (double *)malloc(sizeof(double) * (g_kRenderWidth + 1) * (g_kRenderHeight + 1) );
+    Vy0 = (double *)malloc(sizeof(double) * (g_kRenderWidth + 1) * (g_kRenderHeight + 1) );
+    density = (double *)malloc(sizeof(double) * (g_kRenderWidth + 1) * (g_kRenderHeight + 1) );
+    s = (double *)malloc(sizeof(double) * (g_kRenderWidth + 1) * (g_kRenderHeight + 1) );
     
-    pixels = (uint32_t *)malloc(sizeof(uint32_t) * g_kRenderWidth * g_kRenderHeight);
-    renderPixels = (uint32_t *)malloc(sizeof(uint32_t) * g_kRenderWidth * g_kRenderHeight);
-    particles = (PARTICLETYPES *)malloc(sizeof(PARTICLETYPES) * g_kRenderWidth * g_kRenderHeight);
+    pixels = (uint32_t *)malloc(sizeof(uint32_t) * (g_kRenderWidth + 1) * (g_kRenderHeight + 1) );
+    renderPixels = (uint32_t *)malloc(sizeof(uint32_t) * (g_kRenderWidth + 1) * (g_kRenderHeight + 1) );
+    particles = (PARTICLETYPES *)malloc(sizeof(PARTICLETYPES) * (g_kRenderWidth + 1) * (g_kRenderHeight + 1));
     //initUI(g_kSelectSlices);
     getPointsInsideCircle(g_kSelectRadius);
     getPointsOnCircle(g_kSelectRadius, g_kSelectPixelsPerSlice * g_kSelectSlices);
@@ -425,138 +432,177 @@ int main()
                 if (!updated){
                     
                     updated = true;
-                    for (int x = g_kRenderWidth - 1; x >= 0; --x){
-                        for (int y = g_kRenderHeight - 1; y >= 0; --y){
-                            particleUpdate(particles, g_kRenderWidth, g_kRenderHeight, pixels, colors,x , y);
+                    tempDirtyChunk = dirtyChunk;
+                    for (int x = 0; x < g_kChunkWidth; ++x){
+                        for (int y = 0; y < g_kChunkHeight; ++y){
+                            if (!dirtyChunk[x + y * g_kChunkWidth] && (
+                                dirtyChunk[std::max(0,x - 1) +                 y * g_kChunkWidth] || 
+                                dirtyChunk[std::min(g_kChunkWidth - 1,x + 1) + y * g_kChunkWidth] || 
+                                dirtyChunk[std::max(0,x - 1) +                 (std::min(g_kChunkHeight - 1, y + 1)) * g_kChunkWidth]||
+                                dirtyChunk[x +                                 (std::max(0, y - 1)) * g_kChunkWidth]||
+                                dirtyChunk[std::min(g_kChunkWidth - 1,x + 1) + (std::min(g_kChunkHeight - 1, y + 1)) * g_kChunkWidth]||
+                                dirtyChunk[std::max(0,x - 1) +                 (std::max(0, y - 1)) * g_kChunkWidth]||
+                                dirtyChunk[x +                                 (std::max(0, y - 1)) * g_kChunkWidth]||
+                                dirtyChunk[std::min(g_kChunkWidth - 1,x + 1) + (std::min(g_kChunkHeight - 1, y + 1)) * g_kChunkWidth]))
+                            {
+                                tempDirtyChunk[x + y * g_kChunkWidth] = true;//chunkUpdate(particles, g_kRenderWidth, g_kRenderHeight, pixels, colors, x + y * g_kRenderWidth, g_kChunkN);
+                            }
+                        }
+                        
+                    }
+                    dirtyChunk = tempDirtyChunk;
+                    for (int i = 0; i < g_kChunkWidth * g_kChunkHeight; ++i){
+                        if (dirtyChunk[i] || totalFramesRendered % 50 == 1){
+                            dirtyChunk[i] = chunkUpdate(particles, g_kRenderWidth, g_kRenderHeight, pixels, colors, i, g_kChunkN);
                         }
                     }
+                    
                 }
-                if (SDL_GetTicks() - initial_ticks > g_kMillisecondsPerFrame){
+                if (SDL_GetTicks() - initial_ticks > g_kMillisecondsPerFrame && updated){
                 
                     //particleUpdate(particles, g_kRenderWidth, g_kRenderHeight, pixels, colors);
-                    for (uint32_t i = 0; i < g_kRenderWidth * g_kRenderHeight; ++i)
-                        renderPixels[i] = pixels[i];
-                    std::thread UIThread(SetUI, shiftDown, UIPoints, selectPointX, selectPointY, renderPixels, &slice, mouseX, mouseY);
+                    
+                    // for (uint32_t i = 0; i < g_kRenderWidth * g_kRenderHeight; ++i) renderPixels[i] = pixels[i];
+                    if (shiftDown){
+                        
+                        for (int i = 0; i < g_kChunkWidth * g_kChunkHeight; ++i){
+                            getChunkColors(pixels, g_kRenderWidth, g_kRenderHeight, i, true, g_kChunkN, renderPixels);
+                        }
+                    }
+                    else{
+                        for (int i = 0; i < g_kChunkWidth * g_kChunkHeight; ++i){
+                            getChunkColors(pixels, g_kRenderWidth, g_kRenderHeight, i, dirtyChunk[i], g_kChunkN, renderPixels);
+                        }
+                    }
+                    SetUI(shiftDown, UIPoints, selectPointX, selectPointY, renderPixels, &slice, mouseX, mouseY, pixels);
+                    std::thread renderThread(e,Render(pWindow, pRenderer, pTexture, renderPixels), "Render failed\n");
                     SDL_Event event;
                     while (SDL_PollEvent(&event))
                     {
                         
-                            if (event.type == SDL_MOUSEMOTION){
-                                mouseX = floor(event.button.x / (g_kWindowWidth / g_kRenderWidth));
-                                mouseY = floor(event.button.y / (g_kWindowHeight / g_kRenderHeight));
+                        if (event.type == SDL_MOUSEMOTION){
+                            mouseX = floor(event.button.x / (g_kWindowWidth / g_kRenderWidth));
+                            mouseY = floor(event.button.y / (g_kWindowHeight / g_kRenderHeight));
+                            chunkMouseX = floor(mouseX / (g_kRenderWidth/g_kChunkWidth));
+                            chunkMouseY = floor(mouseY / (g_kRenderHeight/g_kChunkHeight));
+                        }
+                        if (event.type == SDL_QUIT){
+                            running = false;
+                        }
+                        if (event.type == SDL_KEYDOWN){
+                            switch(event.key.keysym.sym){
+                                default:
+                                    break;
+                                case SDLK_ESCAPE:
+                                    running = false;
+                                    break;
                                 
-                            }
-                            if (event.type == SDL_QUIT){
-                                running = false;
-                            }
-                            if (event.type == SDL_KEYDOWN){
-                                switch(event.key.keysym.sym){
-                                    default:
-                                        break;
-                                    case SDLK_ESCAPE:
-                                        running = false;
-                                        break;
+                                case SDLK_SPACE:
+                                    tempCave.init();
+                                    tempCave.step(50);
+                                    particles = tempCave.getMap();
+                                    for (int i = 0; i < g_kRenderWidth * g_kRenderHeight;i++){
+                                        pixels[i] = allProperties[particles[i]].pixelColors[FastRand()%3];
+                                        //pixels[i] = colors[1];
+                                    } 
+                                    break;
+                                case SDLK_LSHIFT:
+                                    shiftDown = true;
                                     
-                                    case SDLK_SPACE:
-                                        tempCave.init();
-                                        tempCave.step(50);
-                                        particles = tempCave.getMap();
-                                        for (int i = 0; i < g_kRenderWidth * g_kRenderHeight;i++){
-                                            pixels[i] = allProperties[particles[i]].pixelColors[FastRand()%3];
-                                            //pixels[i] = colors[1];
-                                        } 
-                                        break;
-                                    case SDLK_LSHIFT:
-                                        shiftDown = true;
-                                        
-                                        break;
-                                }
+                                    break;
                             }
-                            if (event.type == SDL_KEYUP){
-                                switch(event.key.keysym.sym){
-                                    default:
-                                        break;
-                                    case SDLK_LSHIFT:
-                                        shiftDown = false;
-                                        break;
-                                }
+                        }
+                        if (event.type == SDL_KEYUP){
+                            switch(event.key.keysym.sym){
+                                default:
+                                    break;
+                                case SDLK_LSHIFT:
+                                    shiftDown = false;
+                                    for (int i = 0; i < g_kChunkWidth * g_kChunkHeight; ++i){
+                                        getChunkColors(pixels, g_kRenderWidth, g_kRenderHeight, i, true, g_kChunkN, renderPixels);
+                                    }
+                                    break;
                             }
-                            if (event.type == SDL_MOUSEBUTTONDOWN){
-                                switch(event.button.button){
-                                    default:
-                                        break;
-                                    case SDL_BUTTON_LEFT:
-                                        leftMouseDown = true;
-                                        if (shiftDown){
-                                            std::cout<<slice<<std::endl;
-                                            switch (slice){
-                                                default:
-                                                    break;
-                                                case 0:
-                                                    currentCreate = SAND;
-                                                    break;
-                                                case 1:
-                                                    currentCreate = WATER;
-                                                    break;
-                                                case 2:
-                                                    currentCreate = WALL;
-                                                    break;
-                                                case 3:
-                                                    currentCreate = WOOD;
-                                                    break;
-                                                case 4:
-                                                    currentCreate = FIRE;
-                                                    break;
-                                                case 5:
-                                                    currentCreate = PLANT;
-                                                    break;
-                                            }
+                        }
+                        if (event.type == SDL_MOUSEBUTTONDOWN){
+                            switch(event.button.button){
+                                default:
+                                    break;
+                                case SDL_BUTTON_LEFT:
+                                    leftMouseDown = true;
+                                    if (shiftDown){
+                                        std::cout<<slice<<std::endl;
+                                        switch (slice){
+                                            default:
+                                                break;
+                                            case 0:
+                                                currentCreate = SAND;
+                                                break;
+                                            case 1:
+                                                currentCreate = WATER;
+                                                break;
+                                            case 2:
+                                                currentCreate = WALL;
+                                                break;
+                                            case 3:
+                                                currentCreate = WOOD;
+                                                break;
+                                            case 4:
+                                                currentCreate = FIRE;
+                                                break;
+                                            case 5:
+                                                currentCreate = PLANT;
+                                                break;
                                         }
-                                        break;
-                                    case SDL_BUTTON_RIGHT:
-                                        rightMouseDown = true;
-                                        break;
-                                }
+                                    }
+                                    break;
+                                case SDL_BUTTON_RIGHT:
+                                    rightMouseDown = true;
+                                    break;
                             }
-                                
-                            if (event.type == SDL_MOUSEBUTTONUP){
-                                switch (event.button.button){
-                                    default:
-                                        break;
-                                    case SDL_BUTTON_LEFT:
-                                        leftMouseDown = false;
-                                        break;
-                                    case SDL_BUTTON_RIGHT:
-                                        rightMouseDown = false;
-                                        break;
-                                }
+                        }
+                            
+                        if (event.type == SDL_MOUSEBUTTONUP){
+                            switch (event.button.button){
+                                default:
+                                    break;
+                                case SDL_BUTTON_LEFT:
+                                    leftMouseDown = false;
+                                    break;
+                                case SDL_BUTTON_RIGHT:
+                                    rightMouseDown = false;
+                                    break;
                             }
+                        }
                                 
 
                         
                     }
-
                     if (leftMouseDown && shiftDown == false){
                         addParticle(particles, mouseX, mouseY, g_kRenderWidth, pixels, colors, currentCreate);
+                        dirtyChunk[chunkMouseX + chunkMouseY * g_kChunkWidth] = true;
                     }
                     if (rightMouseDown && totalFramesRendered % 2 == 0 && shiftDown == false){
                         removeParticle(particles, mouseX, mouseY, g_kRenderWidth, pixels, colors);
+                        dirtyChunk[chunkMouseX + chunkMouseY * g_kChunkWidth] = true;
                     }
                     if (shiftDown == false){
                         selectPointX = mouseX;
                         selectPointY = mouseY;
+                        selectChunkMouseX = chunkMouseX;
+                        selectChunkMouseY = chunkMouseY;
                     }
                     
-                    UIThread.join();
-                    e(Render(pWindow, pRenderer, pTexture, renderPixels), "Render failed\n");
                     
+                    renderThread.join();
                     updated = false;
                     initial_ticks = SDL_GetTicks();
-                    int64_t currentTick = SDL_GetPerformanceCounter();
-                    totalTicks += currentTick - lastTick;
-                    lastTick = currentTick;
-                    ++totalFramesRendered;
+                    
                 }
+                int64_t currentTick = SDL_GetPerformanceCounter();
+                totalTicks += currentTick - lastTick;
+                lastTick = currentTick;
+                ++totalFramesRendered;
             
                 
             }
@@ -643,6 +689,7 @@ int main()
         }
         else
         {
+            for (uint32_t i = 0; i < g_kRenderWidth * g_kRenderHeight; ++i) renderPixels[i] = pixels[i];
             if (diffusionMap){
                 for (uint32_t i = 0; i < g_kRenderWidth * g_kRenderHeight;i++){
                     Vx[i] = 0;
@@ -652,6 +699,9 @@ int main()
                     density[i] = 0;
                     s[i] = 0;
                 }
+            }
+            for (int i = 0; i < g_kChunkHeight * g_kChunkWidth; ++i){
+                dirtyChunk[i] = true;
             }
             lastTick = SDL_GetPerformanceCounter();
             firstFrame = false;
