@@ -7,7 +7,7 @@
 #include "particles.h"
 #include "cave.cpp"
 #include "UI.cpp"
-#include "pool.h"
+#include "ThreadPool.h"
 using namespace PARTICLES;
 using namespace UI;
 
@@ -303,15 +303,17 @@ SDL_Window* pWindow = nullptr;
 SDL_Renderer* pRenderer = nullptr;
 SDL_Texture* pTexture = nullptr;
 
-void CombinedRender(){e(Render(pWindow, pRenderer, pTexture, renderPixels), "Render failed\n");}
-void VoidedChunkUpdate(PARTICLETYPES * particleTypes, int _width, int _height, uint32_t * pixels, uint32_t * colors, int chunkNum, int chunkWidth){chunkUpdate(particleTypes, _width, _height, pixels, colors, chunkNum, chunkWidth);};
+
+void UpdateChunks(uint32_t totalFramesRendered){for (int i = 0; i < g_kChunkWidth * g_kChunkHeight; ++i){if (dirtyChunk[i] || totalFramesRendered % 50 == 1){dirtyChunk[i] = chunkUpdate(particles, g_kRenderWidth, g_kRenderHeight, pixels, colors, i, g_kChunkN);}}}
+
 class quit_worker_exception : public std::exception {};
 
 int main()
 {
     initDirtyChunks(g_kChunkWidth, g_kChunkHeight, threadedChunkGroups);
-    ThreadPool funcPool(std::thread::hardware_concurrency());
     
+    ThreadPool threadPool(std::thread::hardware_concurrency() - 1);
+
     Vx = (double *)malloc(sizeof(double) * (g_kRenderWidth + 1) * (g_kRenderHeight + 1));
     Vy = (double *)malloc(sizeof(double) * (g_kRenderWidth + 1) * (g_kRenderHeight + 1) );
     Vx0 = (double *)malloc(sizeof(double) * (g_kRenderWidth + 1) * (g_kRenderHeight + 1) );
@@ -380,12 +382,14 @@ int main()
                         
                     }
                     dirtyChunk = tempDirtyChunk;
-                    for (int i = 0; i < g_kChunkWidth * g_kChunkHeight; ++i){
-                        if (dirtyChunk[i] || totalFramesRendered % 50 == 1){
-                            dirtyChunk[i] = chunkUpdate(particles, g_kRenderWidth, g_kRenderHeight, pixels, colors, i, g_kChunkN);
+                    // threadPool.enqueue(UpdateChunks,totalFramesRendered);
+                    for (int i = 0; i < 4; ++i){
+                        for (int i2 : threadedChunkGroups[i]){
+                            if (dirtyChunk[i2] || totalFramesRendered % 50 == 1){
+                                dirtyChunk[i2] = threadPool.enqueue(chunkUpdate, particles, g_kRenderWidth, g_kRenderHeight, pixels, colors, i2, g_kChunkN).get();
+                            }
                         }
                     }
-                    
                     
                 }
                 if (SDL_GetTicks() - initial_ticks > g_kMillisecondsPerFrame && updated){
@@ -413,12 +417,11 @@ int main()
                     else{
                         
                         for (int i = 0; i < g_kChunkWidth * g_kChunkHeight; ++i){
-                            if ((i%g_kChunkWidth + 1)%2 == 0 && ((int)(i/g_kChunkWidth + 1)%2 == 0))
                             getChunkColors(pixels, g_kRenderWidth, g_kRenderHeight, i, true, g_kChunkN, renderPixels);
                         }
                     }
                     SetUI(shiftDown, UIPoints, selectPointX, selectPointY, renderPixels, &slice, mouseX, mouseY, pixels);
-                    funcPool.AddTask(CombinedRender);
+                    threadPool.enqueue(e,Render(pWindow, pRenderer, pTexture, renderPixels), "Render failed\n");
                     SDL_Event event;
                     while (SDL_PollEvent(&event))
                     { 
@@ -632,7 +635,6 @@ int main()
             
         }
     }
-    funcPool.JoinAll();
     // Display render and timing information
     std::cout << "Total Frames:    " << totalFramesRendered << "\n";
     std::cout << "Total Time:      " << static_cast<double>(totalTicks) / SDL_GetPerformanceFrequency() << "s\n";

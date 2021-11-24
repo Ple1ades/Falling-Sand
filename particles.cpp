@@ -133,12 +133,12 @@ void PARTICLES::getChunkColors(uint32_t * pixels, int _width, int _height, int c
     
     if (!visible){
         
-        for (int x = getChunk(chunkNum, chunkWidth, _width, _height).first * chunkWidth + chunkWidth; x > getChunk(chunkNum, chunkWidth, _width, _height).first * chunkWidth; --x){
-            for (int y = getChunk(chunkNum, chunkWidth, _width, _height).second * chunkWidth + chunkWidth; y >= getChunk(chunkNum, chunkWidth, _width, _height).second * chunkWidth; --y){
-                renderPixels[x + y * _width] = (pixels[x + y * _width])/2;
+        // for (int x = getChunk(chunkNum, chunkWidth, _width, _height).first * chunkWidth + chunkWidth; x > getChunk(chunkNum, chunkWidth, _width, _height).first * chunkWidth; --x){
+        //     for (int y = getChunk(chunkNum, chunkWidth, _width, _height).second * chunkWidth + chunkWidth; y >= getChunk(chunkNum, chunkWidth, _width, _height).second * chunkWidth; --y){
+        //         renderPixels[x + y * _width] = (pixels[x + y * _width])/2;
 
-            }
-        }
+        //     }
+        // }
     }
     else{
         
@@ -176,33 +176,34 @@ bool PARTICLES::chunkUpdate(PARTICLETYPES * particleTypes, int _width, int _heig
                     case PLANT:
                         touchingPoints.clear();
                         touchingPointsSecondary.clear();
+                        left = (x - 1) + (y) * _width;
+                        right = (x + 1) + (y) * _width;
+                        aboveLeft = (x - 1) + (y - 1) * _width;
+                        aboveRight = (x + 1) + (y - 1) * _width;
+                        above = x + (y - 1 ) * _width;
+                        below = x + (y + 1 ) * _width;
+                        belowRight = (x + 1) + (y + 1) * _width;
+                        belowLeft = (x - 1) + (y + 1) * _width;
+                        changed = 
+                        particleTypes[left] == NOTHING||
+                        particleTypes[right] == NOTHING||
+                        particleTypes[aboveLeft] == NOTHING||
+                        particleTypes[aboveRight] == NOTHING||
+                        particleTypes[above] == NOTHING||
+                        particleTypes[below] == NOTHING||
+                        particleTypes[belowRight] == NOTHING||
+                        particleTypes[belowLeft] == NOTHING||
+                        particleTypes[left] == WATER||
+                        particleTypes[right] == WATER||
+                        particleTypes[aboveLeft] == WATER||
+                        particleTypes[aboveRight] == WATER||
+                        particleTypes[above] == WATER||
+                        particleTypes[below] == WATER||
+                        particleTypes[belowRight] == WATER||
+                        particleTypes[belowLeft] == WATER;
                         if (FastRand()%10 == 1){
                             
-                            left = (x - 1) + (y) * _width;
-                            right = (x + 1) + (y) * _width;
-                            aboveLeft = (x - 1) + (y - 1) * _width;
-                            aboveRight = (x + 1) + (y - 1) * _width;
-                            above = x + (y - 1 ) * _width;
-                            below = x + (y + 1 ) * _width;
-                            belowRight = (x + 1) + (y + 1) * _width;
-                            belowLeft = (x - 1) + (y + 1) * _width;
-                            changed = 
-                            particleTypes[left] == NOTHING||
-                            particleTypes[right] == NOTHING||
-                            particleTypes[aboveLeft] == NOTHING||
-                            particleTypes[aboveRight] == NOTHING||
-                            particleTypes[above] == NOTHING||
-                            particleTypes[below] == NOTHING||
-                            particleTypes[belowRight] == NOTHING||
-                            particleTypes[belowLeft] == NOTHING||
-                            particleTypes[left] == WATER||
-                            particleTypes[right] == WATER||
-                            particleTypes[aboveLeft] == WATER||
-                            particleTypes[aboveRight] == WATER||
-                            particleTypes[above] == WATER||
-                            particleTypes[below] == WATER||
-                            particleTypes[belowRight] == WATER||
-                            particleTypes[belowLeft] == WATER;
+                            
                             if (particleTypes[left] == NOTHING) touchingPoints.push_back(left);
                             if (particleTypes[right] == NOTHING) touchingPoints.push_back(right);
                             if (particleTypes[aboveLeft] == NOTHING) touchingPoints.push_back(aboveLeft);
@@ -261,6 +262,11 @@ bool PARTICLES::chunkUpdate(PARTICLETYPES * particleTypes, int _width, int _heig
                         below = x + (y + 1 ) * _width;
                         belowRight = (x + 1) + (y + 1) * _width;
                         belowLeft = (x - 1) + (y + 1) * _width;
+                        if (y == 0 || particleTypes[left] == WATER|| particleTypes[right] == WATER || particleTypes[above] == WATER){
+                            particleTypes[x + y * _width] = NOTHING;
+                            pixels[x + y * _width] = allProperties[NOTHING].pixelColors[0];
+                            break;
+                        }
                         changed = 
                             allProperties[particleTypes[left]].burnable||
                             allProperties[particleTypes[right]].burnable||
@@ -286,13 +292,10 @@ bool PARTICLES::chunkUpdate(PARTICLETYPES * particleTypes, int _width, int _heig
                             particleTypes[below] == FIRE||
                             particleTypes[belowRight] == FIRE||
                             particleTypes[belowLeft] == FIRE;
-                        if (FastRand()%2 == 1){
                             
-                            if (y == 0){
-                                particleTypes[x + y * _width] = NOTHING;
-                                pixels[x + y * _width] = allProperties[NOTHING].pixelColors[0];
-                            }
-                            else if (y > 0){
+                        if (FastRand()%2 == 1 && changed){
+                        
+                            if (y > 0){
                                 if (allProperties[particleTypes[left]].burnable){
                                     if (FastRand()%300 == 1){
                                         particleTypes[left] = FIRE; 
@@ -364,73 +367,73 @@ bool PARTICLES::chunkUpdate(PARTICLETYPES * particleTypes, int _width, int _heig
                                 
                                 
                                 
-                                else {
-                                    switch (FastRand()%4){
-                                        default:
-                                            // if (particleTypes[above] == NOTHING && FastRand()%40 == 1){
-                                            //     particleTypes[above] = FIRE;
-                                            //     pixels[above] = allProperties[FIRE].pixelColors[FastRand()%3];
-                                            // }
+                                switch (FastRand()%4){
+                                    default:
+                                        break;
+                                    case 0:
+                                        if (particleTypes[aboveLeft] == NOTHING || particleTypes[aboveLeft] == FIRE){
+                                            std::swap(particleTypes[x + y * _width],particleTypes[aboveLeft]);
+                                            std::swap(pixels[x + y * _width], pixels[aboveLeft]);
                                             break;
-                                        case 0:
-                                            if (particleTypes[aboveLeft] == NOTHING || particleTypes[aboveLeft] == FIRE){
-                                                std::swap(particleTypes[x + y * _width],particleTypes[aboveLeft]);
-                                                std::swap(pixels[x + y * _width], pixels[aboveLeft]);
-                                            }
-                                            else if (particleTypes[aboveRight] == NOTHING || particleTypes[aboveRight] == FIRE){
-                                                std::swap(particleTypes[x + y * _width],particleTypes[aboveRight]);
-                                                std::swap(pixels[x + y * _width], pixels[aboveRight]);
-                                            }
-                                            else if (particleTypes[above] == NOTHING || particleTypes[above] == FIRE){
-                                                std::swap(particleTypes[x + y * _width],particleTypes[above]);
-                                                std::swap(pixels[x + y * _width], pixels[above]);
-                                            }
+                                        }
+                                        else if (particleTypes[aboveRight] == NOTHING || particleTypes[aboveRight] == FIRE){
+                                            std::swap(particleTypes[x + y * _width],particleTypes[aboveRight]);
+                                            std::swap(pixels[x + y * _width], pixels[aboveRight]);
                                             break;
-                                        case 1:
-                                            if (particleTypes[aboveRight] == NOTHING || particleTypes[aboveRight] == FIRE){
-                                                std::swap(particleTypes[x + y * _width],particleTypes[aboveRight]);
-                                                std::swap(pixels[x + y * _width], pixels[aboveRight]);
-                                            }
-                                            else if (particleTypes[above] == NOTHING || particleTypes[above] == FIRE){
-                                                std::swap(particleTypes[x + y * _width],particleTypes[above]);
-                                                std::swap(pixels[x + y * _width], pixels[above]);
-                                            }
-                                            else if (particleTypes[aboveLeft] == NOTHING || particleTypes[aboveLeft] == FIRE){
-                                                std::swap(particleTypes[x + y * _width],particleTypes[aboveLeft]);
-                                                std::swap(pixels[x + y * _width], pixels[aboveLeft]);
-                                            }
+                                        }
+                                        else if (particleTypes[above] == NOTHING || particleTypes[above] == FIRE){
+                                            std::swap(particleTypes[x + y * _width],particleTypes[above]);
+                                            std::swap(pixels[x + y * _width], pixels[above]);
                                             break;
-                                        case 2:
-                                            if (particleTypes[above] == NOTHING || particleTypes[above] == FIRE){
-                                                std::swap(particleTypes[x + y * _width],particleTypes[above]);
-                                                std::swap(pixels[x + y * _width], pixels[above]);
-                                            }
-                                            else if (particleTypes[aboveLeft] == NOTHING || particleTypes[aboveLeft] == FIRE){
-                                                std::swap(particleTypes[x + y * _width],particleTypes[aboveLeft]);
-                                                std::swap(pixels[x + y * _width], pixels[aboveLeft]);
-                                            }
-                                            else if (particleTypes[aboveRight] == NOTHING || particleTypes[aboveRight] == FIRE){
-                                                std::swap(particleTypes[x + y * _width],particleTypes[aboveRight]);
-                                                std::swap(pixels[x + y * _width], pixels[aboveRight]);
-                                            }
+                                        }
+                                        break;
+                                    case 1:
+                                        if (particleTypes[aboveRight] == NOTHING || particleTypes[aboveRight] == FIRE){
+                                            std::swap(particleTypes[x + y * _width],particleTypes[aboveRight]);
+                                            std::swap(pixels[x + y * _width], pixels[aboveRight]);
                                             break;
-                                        case 3:
-                                            if (FastRand()%5 == 0 && touching == 0){
-                                                pixels[x + y * _width] = allProperties[NOTHING].pixelColors[0];
-                                                particleTypes[x + y * _width] = NOTHING;   
-                                            }
+                                        }
+                                        else if (particleTypes[above] == NOTHING || particleTypes[above] == FIRE){
+                                            std::swap(particleTypes[x + y * _width],particleTypes[above]);
+                                            std::swap(pixels[x + y * _width], pixels[above]);
                                             break;
-                                    }
+                                        }
+                                        else if (particleTypes[aboveLeft] == NOTHING || particleTypes[aboveLeft] == FIRE){
+                                            std::swap(particleTypes[x + y * _width],particleTypes[aboveLeft]);
+                                            std::swap(pixels[x + y * _width], pixels[aboveLeft]);
+                                            break;
+                                        }
+                                        break;
+                                    case 2:
+                                        if (particleTypes[above] == NOTHING || particleTypes[above] == FIRE){
+                                            std::swap(particleTypes[x + y * _width],particleTypes[above]);
+                                            std::swap(pixels[x + y * _width], pixels[above]);
+                                            break;
+                                        }
+                                        else if (particleTypes[aboveLeft] == NOTHING || particleTypes[aboveLeft] == FIRE){
+                                            std::swap(particleTypes[x + y * _width],particleTypes[aboveLeft]);
+                                            std::swap(pixels[x + y * _width], pixels[aboveLeft]);
+                                            break;
+                                        }
+                                        else if (particleTypes[aboveRight] == NOTHING || particleTypes[aboveRight] == FIRE){
+                                            std::swap(particleTypes[x + y * _width],particleTypes[aboveRight]);
+                                            std::swap(pixels[x + y * _width], pixels[aboveRight]);
+                                            break;
+                                        }
+                                        break;
+                                    case 3:
+                                        if (FastRand()%5 == 0 && touching == 0){
+                                            pixels[x + y * _width] = allProperties[NOTHING].pixelColors[0];
+                                            particleTypes[x + y * _width] = NOTHING;   
+                                            break;
+                                        }
+                                        break;
                                 }
                                 if (touching != 0 && particleTypes[x + y * _width] != FIRE){
                                     particleTypes[x + y * _width] = FIRE;
                                     pixels[x + y * _width] = allProperties[FIRE].pixelColors[FastRand()%3];
-                                    changed = true;
                                 }
-                                if (particleTypes[left] == WATER|| particleTypes[right] == WATER || particleTypes[above] == WATER){
-                                    pixels[x + y * _width] = allProperties[NOTHING].pixelColors[0];
-                                    particleTypes[x + y * _width] = NOTHING;
-                                }
+                                
                             }
                         }
                         
@@ -446,15 +449,18 @@ bool PARTICLES::chunkUpdate(PARTICLETYPES * particleTypes, int _width, int _heig
                             if (allProperties[particleTypes[below]].shiftable && particleTypes[below] != WATER){
                                 std::swap(particleTypes[x + y * _width],particleTypes[below]);
                                 std::swap(pixels[x + y * _width], pixels[below]);
+                                break;
                             }
                             else if (x == 0){
                                 if (allProperties[particleTypes[right]].shiftable){
                                     std::swap(particleTypes[x + y * _width],particleTypes[right]);
                                     std::swap(pixels[x + y * _width], pixels[right]);
+                                    break;
                                 }
                                 else if (allProperties[particleTypes[belowRight]].shiftable){
                                     std::swap(particleTypes[x + y * _width],particleTypes[belowRight]);
                                     std::swap(pixels[x + y * _width], pixels[belowRight]);
+                                    break;
                                 }
                                 
                             }
@@ -462,11 +468,13 @@ bool PARTICLES::chunkUpdate(PARTICLETYPES * particleTypes, int _width, int _heig
                                 if (allProperties[particleTypes[left]].shiftable){
                                     std::swap(particleTypes[x + y * _width],particleTypes[left]);
                                     std::swap(pixels[x + y * _width], pixels[left]);
+                                    break;
                                     
                                 }
                                 else if (allProperties[particleTypes[belowLeft]].shiftable){
                                     std::swap(particleTypes[x + y * _width],particleTypes[belowLeft]);
                                     std::swap(pixels[x + y * _width], pixels[belowLeft]);
+                                    break;
                                 }
                                 
                             }
@@ -475,38 +483,45 @@ bool PARTICLES::chunkUpdate(PARTICLETYPES * particleTypes, int _width, int _heig
                                     if (allProperties[particleTypes[left]].shiftable){
                                         std::swap(particleTypes[x + y * _width],particleTypes[left]);
                                         std::swap(pixels[x + y * _width], pixels[left]);
-                                    
+                                        break;
                                     }
                                     else if (allProperties[particleTypes[belowLeft]].shiftable){
                                         std::swap(particleTypes[x + y * _width],particleTypes[belowLeft]);
                                         std::swap(pixels[x + y * _width], pixels[belowLeft]);
+                                        break;
                                     }
                                     else if (allProperties[particleTypes[right]].shiftable){
                                         std::swap(particleTypes[x + y * _width],particleTypes[right]);
                                         std::swap(pixels[x + y * _width], pixels[right]);
+                                        break;
                                     }
                                     else if (allProperties[particleTypes[belowRight]].shiftable){
                                         std::swap(particleTypes[x + y * _width],particleTypes[belowRight]);
                                         std::swap(pixels[x + y * _width], pixels[belowRight]);
+                                        break;
                                     }
                                 }
                                 else{
                                     if (allProperties[particleTypes[right]].shiftable){
                                         std::swap(particleTypes[x + y * _width],particleTypes[right]);
                                         std::swap(pixels[x + y * _width], pixels[right]);
+                                        break;
                                         
                                     }
                                     else if (allProperties[particleTypes[belowRight]].shiftable){
                                         std::swap(particleTypes[x + y * _width],particleTypes[belowRight]);
                                         std::swap(pixels[x + y * _width], pixels[belowRight]);
+                                        break;
                                     }
                                     else if (allProperties[particleTypes[left]].shiftable){
                                         std::swap(particleTypes[x + y * _width],particleTypes[left]);
                                         std::swap(pixels[x + y * _width], pixels[left]);
+                                        break;
                                     }
                                     else if (allProperties[particleTypes[belowLeft]].shiftable){
                                         std::swap(particleTypes[x + y * _width],particleTypes[belowLeft]);
                                         std::swap(pixels[x + y * _width], pixels[belowLeft]);
+                                        break;
                                     }
                                 }
                             }
@@ -528,6 +543,7 @@ bool PARTICLES::chunkUpdate(PARTICLETYPES * particleTypes, int _width, int _heig
                                 }
                                 
                                 changed = true;
+                                break;
                             }
                             else if (x == 0){
                                 if (allProperties[particleTypes[right]].shiftable){
@@ -538,6 +554,7 @@ bool PARTICLES::chunkUpdate(PARTICLETYPES * particleTypes, int _width, int _heig
                                     }
                                     
                                     changed = true;
+                                    break;
                                 }
                             }
                             else if (x == _width - 1){
@@ -549,6 +566,7 @@ bool PARTICLES::chunkUpdate(PARTICLETYPES * particleTypes, int _width, int _heig
                                         std::swap(pixels[x + y * _width], pixels[left]);
                                     }
                                     changed = true;
+                                    break;
                                 }
                             }
                             else{
@@ -562,6 +580,7 @@ bool PARTICLES::chunkUpdate(PARTICLETYPES * particleTypes, int _width, int _heig
                                             
                                         }
                                         changed = true;
+                                        break;
                                         
                                     }
                                     else if (allProperties[particleTypes[right]].shiftable){
@@ -573,6 +592,7 @@ bool PARTICLES::chunkUpdate(PARTICLETYPES * particleTypes, int _width, int _heig
                                         
                                         }
                                         changed = true;
+                                        break;
                                     }
                                 }
                                 else{
@@ -585,6 +605,7 @@ bool PARTICLES::chunkUpdate(PARTICLETYPES * particleTypes, int _width, int _heig
                                             
                                         }
                                         changed = true;
+                                        break;
                                     }
                                     else if (allProperties[particleTypes[left]].shiftable){
                                         if (update){
@@ -595,6 +616,7 @@ bool PARTICLES::chunkUpdate(PARTICLETYPES * particleTypes, int _width, int _heig
                                             
                                         }
                                         changed = true;
+                                        break;
                                     }
                                 }
                             }
