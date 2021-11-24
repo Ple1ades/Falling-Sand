@@ -4,8 +4,10 @@
 
 #include "Utilities.h"
 #include "fluid.cpp"
-#include "particles.cpp"
+#include "particles.h"
+#include "cave.cpp"
 #include "UI.cpp"
+#include "pool.h"
 using namespace PARTICLES;
 using namespace UI;
 
@@ -182,106 +184,6 @@ int32_t Render(SDL_Window* pWindow, SDL_Renderer* pRenderer, SDL_Texture* pTextu
 
 
 
-class CaveGenerator{
-public:
-    PARTICLETYPES * map;
-    int fillPercent;
-    PARTICLETYPES wallType;
-    CaveGenerator(int _width, int _height, int _fillPercent, PARTICLETYPES _wallType){
-        width = _width;
-        height = _height;
-        fillPercent = _fillPercent;
-        wallType = _wallType;
-    }
-    void init(){
-        map = (PARTICLETYPES *)malloc(width * height * sizeof(PARTICLETYPES));
-        for (int i = 0; i < width * height; ++i){
-            if (FastRand() % 100 <= fillPercent){
-                map[i] = wallType;
-            }
-            else{
-                map[i] = NOTHING;
-            }
-        }
-    }
-    PARTICLETYPES * getMap(){
-        return map;
-    }
-    void step(int steps){
-        for (int i = 0; i < steps; i++){
-            int sum;
-            PARTICLETYPES * newMap = (PARTICLETYPES *)malloc(width * height * sizeof(PARTICLETYPES));
-            
-            for (int x = 0; x < width ; ++x){
-                for (int y = 0; y < height; ++y){
-                    if (x <= 1) map[x + y * width] = wallType;
-                    if (y <= 1) map[x + y * width] = wallType;
-                    if (x >= width - 2) map[x + y * width] = wallType;
-                    if (y >= height - 2) map[x + y * width] = wallType;
-                    sum = getNeighbors(x , y);
-                    if (map[x + y * width] == wallType && sum < 4){
-                        newMap[x + y * width] = NOTHING;
-                    }
-                    else if (map[x + y * width] == NOTHING && sum >= 5){
-                        newMap[x + y * width] = wallType;
-                    }
-                    else{
-                        newMap[x + y * width] = map[x + y * width];
-                    }
-                    if (x <= 1) map[x + y * width] = wallType;
-                    if (y <= 1) map[x + y * width] = wallType;
-                    if (x >= width - 2) map[x + y * width] = wallType;
-                    if (y >= height - 2) map[x + y * width] = wallType;
-                    //map[x + y * width] = newMap[x + y * width];
-                }
-            }
-            for (int i2 = 0; i2< width * height; i2 ++){
-                map[i2] = newMap[i2];
-            }
-            delete [] newMap;
-        }
-        
-    }
-
-
-
-    void deleteMap(){
-        delete [] map;
-    }
-private:
-    int width;
-    int height;
-
-    int getNeighbors(int x, int y) {
-        int neighbors = 0;
-        if((x - 1 >= 0 && y - 1 >= 0 && map[x - 1 + (y - 1) * width] == wallType) || (x - 1 < 0 && y - 1 < 0)) {
-            neighbors += 1;
-        }
-        if((y - 1 >= 0 && map[x + (y - 1) * width] == wallType) || (y - 1 < 0)) {
-            neighbors += 1;
-        }
-        if((x + 1 < width && y - 1 >= 0 && map[x + 1 + (y - 1 ) * width] == wallType) || (x + 1 >= width && y - 1 < 0)) {
-            neighbors += 1;
-        }
-        if((x - 1 >= 0 && map[x - 1 + y* width] == wallType) || (x - 1 < 0)) {
-            neighbors += 1;
-        }
-        if((x + 1 < width && map[x + 1 + y * width] == wallType) || (x + 1 >= width)) {
-            neighbors += 1;
-        }
-        if((x - 1 >= 0 && y + 1 < height && map[x - 1 + ( y + 1 ) * width] == wallType) || (x - 1 < 0 && y + 1 >= height)) {
-            neighbors += 1;
-        }
-        if((y + 1 < height && map[x + (y + 1) * width] == wallType) || (y + 1 >= height)) {
-            neighbors += 1;
-        }
-        if((x + 1 < width && y + 1 < height && map[x + 1 + (y + 1) * width] == wallType) || (x + 1 >= width && y + 1 >= height)) {
-            neighbors += 1;
-        }
-        return neighbors;
-    }
-
-};
 
 void SetUI(bool shiftDown, int UIPoints, int selectPointX, int selectPointY, uint32_t * renderPixels, int * slice, int mouseX, int mouseY, uint32_t * pixels){
     int pixelR;
@@ -330,6 +232,16 @@ void SetUI(bool shiftDown, int UIPoints, int selectPointX, int selectPointY, uin
     }
 
 }
+void initDirtyChunks(int width, int height, std::vector<int> * chunkGroups){
+    for (int x = 0; x < width; ++x){
+        for (int y = 0; y < height; ++y){
+            if (x%2 == 0 && y%2 == 0) chunkGroups[0].push_back(x + y * width);
+            if (x%2 == 1 && y%2 == 0) chunkGroups[1].push_back(x + y * width);
+            if (x%2 == 0 && y%2 == 1) chunkGroups[2].push_back(x + y * width);
+            if (x%2 == 1 && y%2 == 1) chunkGroups[3].push_back(x + y * width);
+        }
+    }
+}
 
 Uint32 initial_ticks;
 uint32_t * pixels;
@@ -346,6 +258,7 @@ uint32_t layerAlpha;
 
 PARTICLETYPES * particles;
 
+std::vector<int> threadedChunkGroups[4];
 std::map<int,bool> dirtyChunk;
 std::map<int,bool> tempDirtyChunk;
 
@@ -364,11 +277,12 @@ int selectChunkMouseX;
 int selectChunkMouseY;
 int prevMouseX = 0;
 int prevMouseY = 0;
+int updateChunkNum;
 
 double magnitude;
-CaveGenerator caveGenerator(g_kRenderWidth, g_kRenderHeight, 48, WOOD);
-CaveGenerator tempCave(g_kRenderWidth, g_kRenderHeight, 48, WALL);
-PARTICLETYPES currentCreate = SAND;
+CaveGenerator caveGenerator(g_kRenderWidth, g_kRenderHeight, 48, PARTICLETYPES::WOOD);
+CaveGenerator tempCave(g_kRenderWidth, g_kRenderHeight, 47, PARTICLETYPES::WOOD);
+PARTICLETYPES currentCreate = PARTICLETYPES::SAND;
 
 double * Vx;
 double * Vy;
@@ -382,8 +296,22 @@ double dt = 0.2;
 
 
 bool diffusionMap = false;
+
+
+
+SDL_Window* pWindow = nullptr;
+SDL_Renderer* pRenderer = nullptr;
+SDL_Texture* pTexture = nullptr;
+
+void CombinedRender(){e(Render(pWindow, pRenderer, pTexture, renderPixels), "Render failed\n");}
+void VoidedChunkUpdate(PARTICLETYPES * particleTypes, int _width, int _height, uint32_t * pixels, uint32_t * colors, int chunkNum, int chunkWidth){chunkUpdate(particleTypes, _width, _height, pixels, colors, chunkNum, chunkWidth);};
+class quit_worker_exception : public std::exception {};
+
 int main()
 {
+    initDirtyChunks(g_kChunkWidth, g_kChunkHeight, threadedChunkGroups);
+    ThreadPool funcPool(std::thread::hardware_concurrency());
+    
     Vx = (double *)malloc(sizeof(double) * (g_kRenderWidth + 1) * (g_kRenderHeight + 1));
     Vy = (double *)malloc(sizeof(double) * (g_kRenderWidth + 1) * (g_kRenderHeight + 1) );
     Vx0 = (double *)malloc(sizeof(double) * (g_kRenderWidth + 1) * (g_kRenderHeight + 1) );
@@ -398,9 +326,7 @@ int main()
     getPointsInsideCircle(g_kSelectRadius);
     getPointsOnCircle(g_kSelectRadius, g_kSelectPixelsPerSlice * g_kSelectSlices);
     //getPointsOnCircleSlice(g_kSelectRadius * 2, 2 * M_PI * g_kSelectRadius, 0);
-    SDL_Window* pWindow = nullptr;
-    SDL_Renderer* pRenderer = nullptr;
-    SDL_Texture* pTexture = nullptr;
+    
 
     if (e(Startup(&pWindow, &pRenderer, &pTexture), "Startup Failed. Aborting...\n"))
     {
@@ -415,7 +341,10 @@ int main()
     uint64_t totalFramesRendered = 0;
     uint64_t lastTick = 0;
     caveGenerator.init();
+    
     caveGenerator.step(50);
+    caveGenerator.stepJagged(3);
+    caveGenerator.step(5);
     particles = caveGenerator.getMap();
     for (int i = 0; i < g_kRenderWidth * g_kRenderHeight;i++){
         pixels[i] = allProperties[particles[i]].pixelColors[FastRand()%3];
@@ -457,29 +386,42 @@ int main()
                         }
                     }
                     
+                    
                 }
                 if (SDL_GetTicks() - initial_ticks > g_kMillisecondsPerFrame && updated){
-                
+                    
                     //particleUpdate(particles, g_kRenderWidth, g_kRenderHeight, pixels, colors);
                     
                     // for (uint32_t i = 0; i < g_kRenderWidth * g_kRenderHeight; ++i) renderPixels[i] = pixels[i];
-                    if (shiftDown){
-                        
-                        for (int i = 0; i < g_kChunkWidth * g_kChunkHeight; ++i){
-                            getChunkColors(pixels, g_kRenderWidth, g_kRenderHeight, i, true, g_kChunkN, renderPixels);
-                        }
+                    if (leftMouseDown && shiftDown == false){
+                        addParticle(particles, mouseX, mouseY, g_kRenderWidth, pixels, colors, currentCreate);
+                        dirtyChunk[chunkMouseX + chunkMouseY * g_kChunkWidth] = true;
                     }
-                    else{
+                    if (rightMouseDown && totalFramesRendered % 2 == 0 && shiftDown == false){
+                        removeParticle(particles, mouseX, mouseY, g_kRenderWidth, pixels, colors);
+                        dirtyChunk[chunkMouseX + chunkMouseY * g_kChunkWidth] = true;
+                    }
+                    if (shiftDown == false){
+                        selectPointX = mouseX;
+                        selectPointY = mouseY;
+                        selectChunkMouseX = chunkMouseX;
+                        selectChunkMouseY = chunkMouseY;
                         for (int i = 0; i < g_kChunkWidth * g_kChunkHeight; ++i){
                             getChunkColors(pixels, g_kRenderWidth, g_kRenderHeight, i, dirtyChunk[i], g_kChunkN, renderPixels);
                         }
                     }
+                    else{
+                        
+                        for (int i = 0; i < g_kChunkWidth * g_kChunkHeight; ++i){
+                            if ((i%g_kChunkWidth + 1)%2 == 0 && ((int)(i/g_kChunkWidth + 1)%2 == 0))
+                            getChunkColors(pixels, g_kRenderWidth, g_kRenderHeight, i, true, g_kChunkN, renderPixels);
+                        }
+                    }
                     SetUI(shiftDown, UIPoints, selectPointX, selectPointY, renderPixels, &slice, mouseX, mouseY, pixels);
-                    std::thread renderThread(e,Render(pWindow, pRenderer, pTexture, renderPixels), "Render failed\n");
+                    funcPool.AddTask(CombinedRender);
                     SDL_Event event;
                     while (SDL_PollEvent(&event))
-                    {
-                        
+                    { 
                         if (event.type == SDL_MOUSEMOTION){
                             mouseX = floor(event.button.x / (g_kWindowWidth / g_kRenderWidth));
                             mouseY = floor(event.button.y / (g_kWindowHeight / g_kRenderHeight));
@@ -531,27 +473,26 @@ int main()
                                 case SDL_BUTTON_LEFT:
                                     leftMouseDown = true;
                                     if (shiftDown){
-                                        std::cout<<slice<<std::endl;
                                         switch (slice){
                                             default:
                                                 break;
                                             case 0:
-                                                currentCreate = SAND;
+                                                currentCreate = PARTICLETYPES::SAND;
                                                 break;
                                             case 1:
-                                                currentCreate = WATER;
+                                                currentCreate = PARTICLETYPES::WATER;
                                                 break;
                                             case 2:
-                                                currentCreate = WALL;
+                                                currentCreate = PARTICLETYPES::WALL;
                                                 break;
                                             case 3:
-                                                currentCreate = WOOD;
+                                                currentCreate = PARTICLETYPES::WOOD;
                                                 break;
                                             case 4:
-                                                currentCreate = FIRE;
+                                                currentCreate = PARTICLETYPES::FIRE;
                                                 break;
                                             case 5:
-                                                currentCreate = PLANT;
+                                                currentCreate = PARTICLETYPES::PLANT;
                                                 break;
                                         }
                                     }
@@ -578,23 +519,6 @@ int main()
 
                         
                     }
-                    if (leftMouseDown && shiftDown == false){
-                        addParticle(particles, mouseX, mouseY, g_kRenderWidth, pixels, colors, currentCreate);
-                        dirtyChunk[chunkMouseX + chunkMouseY * g_kChunkWidth] = true;
-                    }
-                    if (rightMouseDown && totalFramesRendered % 2 == 0 && shiftDown == false){
-                        removeParticle(particles, mouseX, mouseY, g_kRenderWidth, pixels, colors);
-                        dirtyChunk[chunkMouseX + chunkMouseY * g_kChunkWidth] = true;
-                    }
-                    if (shiftDown == false){
-                        selectPointX = mouseX;
-                        selectPointY = mouseY;
-                        selectChunkMouseX = chunkMouseX;
-                        selectChunkMouseY = chunkMouseY;
-                    }
-                    
-                    
-                    renderThread.join();
                     updated = false;
                     initial_ticks = SDL_GetTicks();
                     
@@ -708,7 +632,7 @@ int main()
             
         }
     }
-    
+    funcPool.JoinAll();
     // Display render and timing information
     std::cout << "Total Frames:    " << totalFramesRendered << "\n";
     std::cout << "Total Time:      " << static_cast<double>(totalTicks) / SDL_GetPerformanceFrequency() << "s\n";

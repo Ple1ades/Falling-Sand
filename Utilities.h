@@ -8,6 +8,10 @@
 #include <utility>
 #include <map>
 #include <array>
+#include <cassert>
+#include "src/boost/asio/io_service.hpp"
+#include "src/boost/bind.hpp"
+#include "src/boost/thread/thread.hpp"
 
 #ifndef M_PI
 #define M_PI           3.14159265358979323846
@@ -21,7 +25,7 @@ constexpr static const int32_t g_kRenderHeight            = g_kWindowHeight / 3;
 constexpr static const int32_t g_kRenderDeviceFlags       = -1;
 constexpr static const int32_t g_kErrorOccurred           = -1;
 constexpr static const char* g_kWindowTitle =             "Falling Sand";
-constexpr static const int g_kMillisecondsPerFrame        = 0;
+constexpr static const int g_kMillisecondsPerFrame        = 1;
 
 // Pixels
 constexpr static const int g_kSelectRadius                = 30;
