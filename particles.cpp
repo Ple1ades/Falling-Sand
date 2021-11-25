@@ -293,9 +293,7 @@ bool PARTICLES::chunkUpdate(PARTICLETYPES * particleTypes, int _width, int _heig
                             particleTypes[belowRight] == FIRE||
                             particleTypes[belowLeft] == FIRE;
                             
-                        if (FastRand()%2 == 1 && changed){
-                        
-                            if (y > 0){
+                        if (y > 0&& changed){
                                 if (allProperties[particleTypes[left]].burnable){
                                     if (FastRand()%300 == 1){
                                         particleTypes[left] = FIRE; 
@@ -433,8 +431,6 @@ bool PARTICLES::chunkUpdate(PARTICLETYPES * particleTypes, int _width, int _heig
                                     particleTypes[x + y * _width] = FIRE;
                                     pixels[x + y * _width] = allProperties[FIRE].pixelColors[FastRand()%3];
                                 }
-                                
-                            }
                         }
                         
                         break;

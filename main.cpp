@@ -145,7 +145,6 @@ int32_t Startup(SDL_Window** ppWindow, SDL_Renderer** ppRenderer, SDL_Texture** 
 
 
 // Call this within every render loop
-// Fills screen with randomly generated colored pixels
 int32_t Render(SDL_Window* pWindow, SDL_Renderer* pRenderer, SDL_Texture* pTexture, uint32_t * pixels)
 {
     // The Back Buffer texture may be stored with an extra bit of width (pitch) on the video card in order to properly
@@ -261,6 +260,7 @@ PARTICLETYPES * particles;
 std::vector<int> threadedChunkGroups[4];
 std::map<int,bool> dirtyChunk;
 std::map<int,bool> tempDirtyChunk;
+std::future<bool> *dirtyChunkResults;
 
 bool leftMouseDown = false;
 bool rightMouseDown = false;
@@ -304,15 +304,17 @@ SDL_Renderer* pRenderer = nullptr;
 SDL_Texture* pTexture = nullptr;
 
 
-void UpdateChunks(uint32_t totalFramesRendered){for (int i = 0; i < g_kChunkWidth * g_kChunkHeight; ++i){if (dirtyChunk[i] || totalFramesRendered % 50 == 1){dirtyChunk[i] = chunkUpdate(particles, g_kRenderWidth, g_kRenderHeight, pixels, colors, i, g_kChunkN);}}}
+void UpdateChunks(){for (int i = 0; i < g_kChunkWidth * g_kChunkHeight; ++i){getChunkColors(pixels, g_kRenderWidth, g_kRenderHeight, i, true, g_kChunkN, renderPixels);}}
 
 class quit_worker_exception : public std::exception {};
 
 int main()
 {
     initDirtyChunks(g_kChunkWidth, g_kChunkHeight, threadedChunkGroups);
-    
-    ThreadPool threadPool(std::thread::hardware_concurrency() - 1);
+    dirtyChunkResults = (std::future<bool> *)malloc(sizeof(std::future<bool>) * (g_kRenderWidth + 1) * (g_kRenderHeight + 1));
+
+    ThreadPool mainThreadPool(std::thread::hardware_concurrency() / 2);
+    ThreadPool dirtyRectPool(std::thread::hardware_concurrency() / 2);
 
     Vx = (double *)malloc(sizeof(double) * (g_kRenderWidth + 1) * (g_kRenderHeight + 1));
     Vy = (double *)malloc(sizeof(double) * (g_kRenderWidth + 1) * (g_kRenderHeight + 1) );
@@ -324,6 +326,7 @@ int main()
     pixels = (uint32_t *)malloc(sizeof(uint32_t) * (g_kRenderWidth + 1) * (g_kRenderHeight + 1) );
     renderPixels = (uint32_t *)malloc(sizeof(uint32_t) * (g_kRenderWidth + 1) * (g_kRenderHeight + 1) );
     particles = (PARTICLETYPES *)malloc(sizeof(PARTICLETYPES) * (g_kRenderWidth + 1) * (g_kRenderHeight + 1));
+    
     //initUI(g_kSelectSlices);
     getPointsInsideCircle(g_kSelectRadius);
     getPointsOnCircle(g_kSelectRadius, g_kSelectPixelsPerSlice * g_kSelectSlices);
@@ -385,11 +388,13 @@ int main()
                     // threadPool.enqueue(UpdateChunks,totalFramesRendered);
                     for (int i = 0; i < 4; ++i){
                         for (int i2 : threadedChunkGroups[i]){
-                            if (dirtyChunk[i2] || totalFramesRendered % 50 == 1){
-                                dirtyChunk[i2] = threadPool.enqueue(chunkUpdate, particles, g_kRenderWidth, g_kRenderHeight, pixels, colors, i2, g_kChunkN).get();
+                            if (dirtyChunk[i2] || totalFramesRendered % 100 == 1){
+                                dirtyChunkResults[i2] = dirtyRectPool.enqueue(chunkUpdate, particles, g_kRenderWidth, g_kRenderHeight, pixels, colors, i2, g_kChunkN);
                             }
                         }
+                        while (dirtyRectPool.checkTasks() != 0){}
                     }
+                    
                     
                 }
                 if (SDL_GetTicks() - initial_ticks > g_kMillisecondsPerFrame && updated){
@@ -412,6 +417,7 @@ int main()
                         selectChunkMouseY = chunkMouseY;
                         for (int i = 0; i < g_kChunkWidth * g_kChunkHeight; ++i){
                             getChunkColors(pixels, g_kRenderWidth, g_kRenderHeight, i, dirtyChunk[i], g_kChunkN, renderPixels);
+                            
                         }
                     }
                     else{
@@ -421,7 +427,7 @@ int main()
                         }
                     }
                     SetUI(shiftDown, UIPoints, selectPointX, selectPointY, renderPixels, &slice, mouseX, mouseY, pixels);
-                    threadPool.enqueue(e,Render(pWindow, pRenderer, pTexture, renderPixels), "Render failed\n");
+                    mainThreadPool.enqueue(e,Render(pWindow, pRenderer, pTexture, renderPixels), "Render failed\n");
                     SDL_Event event;
                     while (SDL_PollEvent(&event))
                     { 
@@ -449,7 +455,8 @@ int main()
                                     for (int i = 0; i < g_kRenderWidth * g_kRenderHeight;i++){
                                         pixels[i] = allProperties[particles[i]].pixelColors[FastRand()%3];
                                         //pixels[i] = colors[1];
-                                    } 
+                                    }
+                                    mainThreadPool.enqueue(UpdateChunks);
                                     break;
                                 case SDLK_LSHIFT:
                                     shiftDown = true;
@@ -463,9 +470,10 @@ int main()
                                     break;
                                 case SDLK_LSHIFT:
                                     shiftDown = false;
-                                    for (int i = 0; i < g_kChunkWidth * g_kChunkHeight; ++i){
-                                        getChunkColors(pixels, g_kRenderWidth, g_kRenderHeight, i, true, g_kChunkN, renderPixels);
-                                    }
+                                    // for (int i = 0; i < g_kChunkWidth * g_kChunkHeight; ++i){
+                                    //     getChunkColors(pixels, g_kRenderWidth, g_kRenderHeight, i, true, g_kChunkN, renderPixels);
+                                    // }
+                                    mainThreadPool.enqueue(UpdateChunks);
                                     break;
                             }
                         }

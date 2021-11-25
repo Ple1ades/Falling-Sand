@@ -17,13 +17,15 @@ public:
     template<class F, class... Args>
     auto enqueue(F&& f, Args&&... args) 
         -> std::future<typename std::result_of<F(Args...)>::type>;
+
+    int checkTasks();
     ~ThreadPool();
+    
 private:
     // need to keep track of threads so we can join them
     std::vector< std::thread > workers;
     // the task queue
     std::queue< std::function<void()> > tasks;
-    
     // synchronization
     std::mutex queue_mutex;
     std::condition_variable condition;
@@ -83,6 +85,9 @@ auto ThreadPool::enqueue(F&& f, Args&&... args)
     return res;
 }
 
+int ThreadPool::checkTasks(){
+    return tasks.size();
+}
 // the destructor joins all threads
 inline ThreadPool::~ThreadPool()
 {
@@ -94,5 +99,6 @@ inline ThreadPool::~ThreadPool()
     for(std::thread &worker: workers)
         worker.join();
 }
+
 
 #endif

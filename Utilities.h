@@ -21,7 +21,7 @@ constexpr static const int32_t g_kRenderHeight            = g_kWindowHeight / 3;
 constexpr static const int32_t g_kRenderDeviceFlags       = -1;
 constexpr static const int32_t g_kErrorOccurred           = -1;
 constexpr static const char* g_kWindowTitle =             "Falling Sand";
-constexpr static const int g_kMillisecondsPerFrame        = 2;
+constexpr static const int g_kMillisecondsPerFrame        = 8;
 
 // Pixels
 constexpr static const int g_kSelectRadius                = 30;
