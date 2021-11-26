@@ -92,5 +92,7 @@ namespace PARTICLES{
     void updateChunk(int chunkNum, int chunkWidth, int _width, int _height, uint32_t * pixels, uint32_t *renderPixels);
     void getChunkColors(uint32_t * pixels, int _width, int _height, int chunkNum, bool visible, int chunkWidth, uint32_t * renderPixels);
     bool chunkUpdate(PARTICLETYPES * particleTypes, int _width, int _height, uint32_t * pixels, uint32_t * colors, int chunkNum, int chunkWidth);
+    void getSolidParticles(PARTICLETYPES * particleTypes, int _width, int _height, bool * solidPixels);
+    std::vector<SDL_Rect> checkPointBorder(int x, int width, int scaleFactor, bool * solidPixels);
 }
 #endif

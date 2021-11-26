@@ -145,7 +145,7 @@ int32_t Startup(SDL_Window** ppWindow, SDL_Renderer** ppRenderer, SDL_Texture** 
 
 
 // Call this within every render loop
-int32_t Render(SDL_Window* pWindow, SDL_Renderer* pRenderer, SDL_Texture* pTexture, uint32_t * pixels)
+int32_t Render(SDL_Window* pWindow, SDL_Renderer* pRenderer, SDL_Texture* pTexture, uint32_t * pixels, std::vector<SDL_Rect> border)
 {
     // The Back Buffer texture may be stored with an extra bit of width (pitch) on the video card in order to properly
     // align it in VRAM should the width not lie on the correct memory boundary (usually four bytes).
@@ -172,8 +172,17 @@ int32_t Render(SDL_Window* pWindow, SDL_Renderer* pRenderer, SDL_Texture* pTextu
         // Copy our texture in VRAM to the display framebuffer in VRAM
         SDL_RenderCopy(pRenderer, pTexture, NULL, NULL);
 
+        // if (border.size() > 0){
+        //     SDL_SetRenderDrawColor(pRenderer, 0, 255, 0, SDL_ALPHA_OPAQUE);
+        //     for (int i = 0; i < border.size(); ++i){
+        //         SDL_RenderDrawLine(pRenderer, border[i].x, border[i].y, border[i].w, border[i].h);
+        //     }
+        // }
+        
         // Copy the VRAM framebuffer to the display
         SDL_RenderPresent(pRenderer);
+
+
 
         return 0;
     }
@@ -262,9 +271,14 @@ std::map<int,bool> dirtyChunk;
 std::map<int,bool> tempDirtyChunk;
 std::future<bool> *dirtyChunkResults;
 
+bool * solidPixels;
+std::vector<SDL_Rect> border;
+std::future<std::vector<SDL_Rect>> * borderOut;
+
 bool leftMouseDown = false;
 bool rightMouseDown = false;
 bool shiftDown = false;
+bool physicsUpdated = false;
 bool updated = false;
 bool mouseDown = false;
 int selectPointX = 0;
@@ -294,10 +308,7 @@ double visc = 0.0000001;
 double diff = 0.000001;
 double dt = 0.2;
 
-
 bool diffusionMap = false;
-
-
 
 SDL_Window* pWindow = nullptr;
 SDL_Renderer* pRenderer = nullptr;
@@ -310,19 +321,23 @@ class quit_worker_exception : public std::exception {};
 
 int main()
 {
+    
+    
     initDirtyChunks(g_kChunkWidth, g_kChunkHeight, threadedChunkGroups);
     dirtyChunkResults = (std::future<bool> *)malloc(sizeof(std::future<bool>) * (g_kRenderWidth + 1) * (g_kRenderHeight + 1));
 
     ThreadPool mainThreadPool(std::thread::hardware_concurrency() / 2);
     ThreadPool dirtyRectPool(std::thread::hardware_concurrency() / 2);
 
+    borderOut = (std::future<std::vector<SDL_Rect>> *)malloc(sizeof(std::vector<SDL_Rect>) * (g_kRenderWidth));
+    solidPixels = (bool *)malloc(sizeof(bool) * (g_kRenderWidth + 1) * (g_kRenderHeight + 1));
     Vx = (double *)malloc(sizeof(double) * (g_kRenderWidth + 1) * (g_kRenderHeight + 1));
     Vy = (double *)malloc(sizeof(double) * (g_kRenderWidth + 1) * (g_kRenderHeight + 1) );
     Vx0 = (double *)malloc(sizeof(double) * (g_kRenderWidth + 1) * (g_kRenderHeight + 1) );
     Vy0 = (double *)malloc(sizeof(double) * (g_kRenderWidth + 1) * (g_kRenderHeight + 1) );
     density = (double *)malloc(sizeof(double) * (g_kRenderWidth + 1) * (g_kRenderHeight + 1) );
     s = (double *)malloc(sizeof(double) * (g_kRenderWidth + 1) * (g_kRenderHeight + 1) );
-    
+
     pixels = (uint32_t *)malloc(sizeof(uint32_t) * (g_kRenderWidth + 1) * (g_kRenderHeight + 1) );
     renderPixels = (uint32_t *)malloc(sizeof(uint32_t) * (g_kRenderWidth + 1) * (g_kRenderHeight + 1) );
     particles = (PARTICLETYPES *)malloc(sizeof(PARTICLETYPES) * (g_kRenderWidth + 1) * (g_kRenderHeight + 1));
@@ -395,9 +410,20 @@ int main()
                         while (dirtyRectPool.checkTasks() != 0){}
                     }
                     
-                    
                 }
-                if (SDL_GetTicks() - initial_ticks > g_kMillisecondsPerFrame && updated){
+                // if (!physicsUpdated){
+                //     dirtyRectPool.enqueue(getSolidParticles, particles, g_kRenderWidth, g_kRenderHeight, solidPixels);
+                //     border.clear();
+                //     for (int x = 1; x < g_kRenderWidth - 1; ++x){
+                //         borderOut[x] = dirtyRectPool.enqueue(checkPointBorder, x, g_kRenderWidth, g_kRenderScaleFactor, solidPixels);
+                //     }
+                //     while (dirtyRectPool.checkTasks() != 0){}
+                //     for (int i = 0; i < sizeof(borderOut); ++i){
+                //         // border.insert(border.end(), borderOut[i].get().begin(), borderOut[i].get().end());
+                //     }
+                //     physicsUpdated = false;
+                // }
+                if (SDL_GetTicks() - initial_ticks > g_kMillisecondsPerFrame && updated && mainThreadPool.checkTasks() == 0){
                     
                     //particleUpdate(particles, g_kRenderWidth, g_kRenderHeight, pixels, colors);
                     
@@ -427,7 +453,7 @@ int main()
                         }
                     }
                     SetUI(shiftDown, UIPoints, selectPointX, selectPointY, renderPixels, &slice, mouseX, mouseY, pixels);
-                    mainThreadPool.enqueue(e,Render(pWindow, pRenderer, pTexture, renderPixels), "Render failed\n");
+                    mainThreadPool.enqueue(e,Render(pWindow, pRenderer, pTexture, renderPixels, border), "Render failed\n");
                     SDL_Event event;
                     while (SDL_PollEvent(&event))
                     { 
@@ -538,7 +564,6 @@ int main()
                 totalTicks += currentTick - lastTick;
                 lastTick = currentTick;
                 ++totalFramesRendered;
-            
                 
             }
             // else{

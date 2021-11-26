@@ -16,8 +16,9 @@
 // Render
 constexpr static const int32_t g_kWindowWidth             = 1920;
 constexpr static const int32_t g_kWindowHeight            = 1080;
-constexpr static const int32_t g_kRenderWidth             = g_kWindowWidth / 3;
-constexpr static const int32_t g_kRenderHeight            = g_kWindowHeight / 3;
+constexpr static const int32_t g_kRenderScaleFactor       = 3;
+constexpr static const int32_t g_kRenderWidth             = g_kWindowWidth / g_kRenderScaleFactor;
+constexpr static const int32_t g_kRenderHeight            = g_kWindowHeight / g_kRenderScaleFactor;
 constexpr static const int32_t g_kRenderDeviceFlags       = -1;
 constexpr static const int32_t g_kErrorOccurred           = -1;
 constexpr static const char* g_kWindowTitle =             "Falling Sand";

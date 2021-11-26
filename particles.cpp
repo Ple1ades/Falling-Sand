@@ -151,6 +151,22 @@ void PARTICLES::getChunkColors(uint32_t * pixels, int _width, int _height, int c
         }
     }
 }
+
+void PARTICLES::getSolidParticles(PARTICLETYPES * particleTypes, int _width, int _height, bool * solidPixels){
+    for (int i = 0; i < _width * _height; ++i){
+        solidPixels[i] = (!allProperties[particleTypes[i]].shiftable);
+    }
+}
+std::vector<SDL_Rect> PARTICLES::checkPointBorder(int x, int width, int scaleFactor, bool * solidPixels){
+    std::vector<SDL_Rect> row;
+    for (int y = 1; y < g_kRenderHeight - 1; ++y){
+        if (solidPixels[x + y * width]){
+            if (!solidPixels[x + 1 + y * width]) row.push_back({x, y, (x-1), y});
+            
+        }
+    }
+    return row;
+}
 bool PARTICLES::chunkUpdate(PARTICLETYPES * particleTypes, int _width, int _height, uint32_t * pixels, uint32_t * colors, int chunkNum, int chunkWidth){
     
     int left, right, below, above, aboveLeft, aboveRight, belowRight, belowLeft;
