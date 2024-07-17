@@ -1,6 +1,5 @@
 # Falling-Sand
-Basis for future projects
-
+SDL2 test with simple pixel physics
 
 Compile with : "make"
 
