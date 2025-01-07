@@ -77,7 +77,8 @@ namespace PARTICLES{
         WOOD = 5,
         FIRE = 6,
         PLANT = 7,
-        FLOWER = 8
+        FLOWER = 8,
+        ICE = 9
     };
     struct PARTICLEPROPERTIES{
         bool shiftable;
