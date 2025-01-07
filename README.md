@@ -1,11 +1,10 @@
 # Falling-Sand
-Basis for future projects
-
+SDL2 test with simple pixel physics
 
 Compile with : "make"
 
 
-Run with : "./main.exe"
+Run with : "./build/main.exe"
 
 
 https://www.wdv.com/Aerospace/Fluids/StamFluidsforGames.pdf
